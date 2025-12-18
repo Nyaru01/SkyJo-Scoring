@@ -30,7 +30,7 @@ export default function Dashboard() {
     const gameStatus = useGameStore(selectGameStatus);
     const addRound = useGameStore(state => state.addRound);
     const resetGame = useGameStore(state => state.resetGame);
-    const [activeTab, setActiveTab] = useState('game');
+    const [activeTab, setActiveTab] = useState('home');
 
     // Auto-switch to 'game' tab when the game starts
     useEffect(() => {
