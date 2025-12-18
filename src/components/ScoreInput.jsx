@@ -1,0 +1,191 @@
+import { useState } from 'react';
+import { Check, AlertCircle } from 'lucide-react';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { cn } from '../lib/utils';
+
+export default function ScoreInput({ players, onSave, onCancel, isEmbedded = false, rounds = [] }) {
+    const [scores, setScores] = useState(
+        players.reduce((acc, p) => ({ ...acc, [p.id]: '' }), {})
+    );
+    const [finisher, setFinisher] = useState(null);
+    const [error, setError] = useState('');
+
+    const handleScoreChange = (pid, value) => {
+        setScores(prev => ({ ...prev, [pid]: value }));
+    };
+
+    const handleSubmit = () => {
+        if (!finisher) {
+            setError('Veuillez sélectionner le joueur qui a fini la manche.');
+            return;
+        }
+        const rawScores = {};
+        for (const p of players) {
+            const val = scores[p.id];
+            if (val === '' || val === undefined || isNaN(parseInt(val))) {
+                setError(`Veuillez entrer le score pour ${p.name}.`);
+                return;
+            }
+            rawScores[p.id] = parseInt(val);
+        }
+        setError('');
+        onSave(rawScores, finisher);
+    };
+
+    const content = (
+        <Card className={cn("w-full transition-all border-white/20 bg-white/30 backdrop-blur-xl shadow-2xl", !isEmbedded && "max-w-lg")}>
+            <CardHeader className="border-b border-white/20 pb-4">
+                <CardTitle className="text-center text-emerald-900 drop-shadow-sm">
+                    {isEmbedded ? "Nouvelle Manche" : "Fin de manche"}
+                </CardTitle>
+                <p className="text-center text-slate-600 font-medium text-sm">Entrez les scores des cartes restantes</p>
+            </CardHeader>
+
+            <CardContent className="space-y-6 pt-6">
+                {error && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center gap-2 text-sm font-medium animate-in slide-in-from-top-1 border border-red-100">
+                        <AlertCircle className="h-4 w-4" />
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-600 px-4 uppercase tracking-wide">
+                        <span>Joueur</span>
+                        {/* Headers aligned for mobile */}
+                        <div className="flex items-center gap-2 text-right">
+                            <span className="w-24 text-center text-slate-500">Historique</span>
+                            <span className="w-20 text-center text-slate-600">Manche</span>
+                            <span className="w-14 text-center text-slate-600">Total</span>
+                        </div>
+                    </div>
+
+                    {players.map((p, index) => {
+                        const isFinisher = finisher === p.id;
+                        const currentScore = parseInt(scores[p.id]) || 0;
+                        const previousTotal = p.score || 0;
+                        const newTotal = previousTotal + currentScore;
+
+                        return (
+                            <div
+                                key={p.id}
+                                className={cn(
+                                    "relative flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer duration-500 animate-in fade-in slide-in-from-bottom-2 fill-mode-backwards shadow-sm",
+                                    isFinisher ? "border-emerald-500 bg-emerald-50/90" : "border-white/20 bg-white/40 hover:bg-white/60 hover:border-white/40"
+                                )}
+                                style={{ animationDelay: `${index * 100}ms` }}
+                                onClick={() => setFinisher(p.id)}
+                            >
+                                <div className="flex items-center gap-3 overflow-hidden min-w-0 flex-1">
+                                    {/* Finisher Selection */}
+                                    <div className={cn(
+                                        "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
+                                        isFinisher ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-400 bg-white/50"
+                                    )}>
+                                        {isFinisher && <Check className="h-4 w-4" strokeWidth={3} />}
+                                    </div>
+
+                                    {/* Player Name & Current Total */}
+                                    <div className="flex flex-col min-w-0">
+                                        <span className={cn("font-bold truncate text-base leading-tight", isFinisher ? "text-emerald-900" : "text-slate-900")}>
+                                            {p.name}
+                                        </span>
+                                        <span className={cn("text-xs font-semibold", isFinisher ? "text-emerald-700" : "text-slate-500")}>
+                                            Actuel: {previousTotal}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 shrink-0">
+                                    {/* Scrollable History */}
+                                    {rounds.length > 0 && (
+                                        <div className="w-24 overflow-x-auto flex items-center justify-end gap-1 px-1 no-scrollbar mask-linear-fade">
+                                            {rounds.map((r, rIdx) => {
+                                                const s = r.scores[p.id];
+                                                return (
+                                                    <div key={rIdx} className={cn(
+                                                        "shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border min-w-[24px] text-center shadow-sm",
+                                                        s > 0 ? "bg-red-50 text-red-700 border-red-200" : s < 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-white text-slate-500 border-slate-200"
+                                                    )}>
+                                                        {s}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {/* Score Input */}
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <Input
+                                            type="tel"
+                                            inputMode="numeric"
+                                            pattern="[0-9-]*"
+                                            value={scores[p.id]}
+                                            onChange={(e) => handleScoreChange(p.id, e.target.value)}
+                                            className={cn(
+                                                "w-20 text-center font-mono text-xl h-12 shadow-sm transition-colors",
+                                                scores[p.id] !== '' ? "font-bold text-slate-900 border-emerald-500 ring-2 ring-emerald-100 bg-white/80" : "bg-white/50 border-white/30 focus:bg-white/80"
+                                            )}
+                                            placeholder="0"
+                                        />
+                                    </div>
+
+                                    {/* Total Display */}
+                                    <div className="w-14 text-center flex flex-col justify-center">
+                                        <span className={cn("text-lg font-black tabular-nums drop-shadow-sm", isFinisher ? "text-emerald-800" : "text-slate-800")}>
+                                            {newTotal}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Finisher Label Badge */}
+                                {isFinisher && (
+                                    <div className="absolute -top-2.5 left-4 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm z-10">
+                                        A FINI
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    {/* Round Summary */}
+                    <div className="flex justify-between items-center px-4 py-2 mt-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <span className="text-xs font-medium text-slate-500 uppercase">Total Manche</span>
+                        <span className="font-mono font-bold text-slate-700">
+                            {Object.values(scores).reduce((sum, val) => sum + (parseInt(val) || 0), 0)} pts
+                        </span>
+                    </div>
+                </div>
+
+                <div className={cn("grid gap-3 pt-4", !isEmbedded ? "grid-cols-2" : "grid-cols-1")}>
+                    {!isEmbedded && onCancel && (
+                        <Button variant="secondary" onClick={onCancel} className="w-full">
+                            Annuler
+                        </Button>
+                    )}
+                    <Button onClick={handleSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700 h-14 text-lg shadow-emerald-200 shadow-lg">
+                        Valider la manche
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    if (isEmbedded) {
+        return (
+            <div id="score-input-section" className="animate-in fade-in slide-in-from-bottom-8 duration-500 pb-8">
+                {content}
+            </div>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 bg-slate-50/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+            <div className="animate-in zoom-in-95 duration-200 w-full max-w-lg">
+                {content}
+            </div>
+        </div>
+    );
+}
