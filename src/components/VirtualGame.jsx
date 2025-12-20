@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Users, ArrowLeft, RotateCcw, Trophy, Info, Sparkles, CheckCircle } from 'lucide-react';
+import { Play, Users, ArrowLeft, RotateCcw, Trophy, Info, Sparkles, CheckCircle, BookOpen, X } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import { Input } from './ui/Input';
@@ -91,6 +91,7 @@ export default function VirtualGame() {
     const [copyToast, setCopyToast] = useState(null);
     const [notification, setNotification] = useState(null);
     const [hasPlayedVictory, setHasPlayedVictory] = useState(false);
+    const [showRulesModal, setShowRulesModal] = useState(false);
 
     // Feedback sounds
     const { playVictory } = useFeedback();
@@ -322,6 +323,99 @@ export default function VirtualGame() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Rules Button */}
+                <button
+                    onClick={() => setShowRulesModal(true)}
+                    className="w-full p-4 rounded-2xl glass-premium dark:glass-dark border border-amber-200/50 dark:border-amber-700/50 hover:border-amber-400 transition-all group cursor-pointer"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                            <BookOpen className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="text-left flex-1">
+                            <p className="font-bold text-slate-800 dark:text-slate-200">Règles du jeu</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Comment jouer à Skyjo</p>
+                        </div>
+                        <span className="text-amber-500 dark:text-amber-400 text-lg">→</span>
+                    </div>
+                </button>
+
+                {/* Rules Modal */}
+                {showRulesModal && (
+                    <>
+                        <div
+                            className="fixed inset-0 bg-black/60 z-[100] backdrop-blur-sm"
+                            onClick={() => setShowRulesModal(false)}
+                        />
+                        <div className="fixed inset-4 top-8 bottom-8 z-[110] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+                                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <BookOpen className="h-5 w-5 text-amber-600" />
+                                    Règles de Skyjo
+                                </h2>
+                                <button
+                                    onClick={() => setShowRulesModal(false)}
+                                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                >
+                                    <X className="h-5 w-5 text-slate-500" />
+                                </button>
+                            </div>
+                            {/* Modal Body */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                                <section>
+                                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">🎯 Objectif</h3>
+                                    <p>Avoir le <strong>moins de points possible</strong> à la fin de la partie. Le jeu se termine quand un joueur atteint 100 points.</p>
+                                </section>
+
+                                <section>
+                                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">🃏 Mise en place</h3>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li>Chaque joueur reçoit <strong>12 cartes face cachée</strong> (grille 3×4)</li>
+                                        <li>Retournez <strong>2 cartes</strong> de votre choix</li>
+                                        <li>Le joueur avec la somme la plus élevée commence</li>
+                                    </ul>
+                                </section>
+
+                                <section>
+                                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">🔄 Tour de jeu</h3>
+                                    <p className="mb-2">Piochez une carte de la <strong>pioche</strong> ou de la <strong>défausse</strong> :</p>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li><strong>Pioche</strong> : Gardez-la pour remplacer une carte OU défaussez-la et retournez une carte cachée</li>
+                                        <li><strong>Défausse</strong> : Remplacez obligatoirement une de vos cartes</li>
+                                    </ul>
+                                </section>
+
+                                <section>
+                                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">✨ Colonnes identiques</h3>
+                                    <p>Si une colonne contient <strong>3 cartes identiques</strong> (toutes face visible), elle est <strong>éliminée</strong> !</p>
+                                </section>
+
+                                <section>
+                                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">🏁 Fin de manche</h3>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li>La manche se termine quand un joueur retourne toutes ses cartes</li>
+                                        <li>Les autres joueurs jouent <strong>un dernier tour</strong></li>
+                                        <li><strong>Attention :</strong> Si le finisseur n'a pas le score le plus bas, ses points sont <strong>doublés</strong> !</li>
+                                    </ul>
+                                </section>
+
+                                <section>
+                                    <h3 className="font-bold text-amber-600 dark:text-amber-400 mb-2">🏆 Valeurs des cartes</h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
+                                            <span className="font-bold text-red-600">-2</span> à <span className="font-bold text-red-600">12</span>
+                                        </div>
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-center">
+                                            <span className="font-bold text-blue-600">0</span> = neutre
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         );
     }
