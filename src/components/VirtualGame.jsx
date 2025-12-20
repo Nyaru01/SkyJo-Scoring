@@ -14,7 +14,7 @@ import { useGameStore } from '../store/gameStore';
 import { calculateFinalScores } from '../lib/skyjoEngine';
 import { useFeedback } from '../hooks/useFeedback';
 import { cn } from '../lib/utils';
-import { Copy, Wifi, WifiOff } from 'lucide-react';
+import { Copy, Wifi, WifiOff, Share2 } from 'lucide-react';
 
 // Player colors for avatars
 
@@ -109,6 +109,14 @@ export default function VirtualGame() {
             setInitialReveals({}); // Reset initial reveals for new game
         }
     }, [onlineGameStarted, onlineGameState, screen]);
+
+    // Return to lobby when online game is cancelled (host quits)
+    useEffect(() => {
+        if (screen === 'game' && onlineRoomCode && !onlineGameStarted && !onlineIsGameOver) {
+            // Game was cancelled (host left or not enough players)
+            setScreen('lobby');
+        }
+    }, [onlineGameStarted, onlineIsGameOver, onlineRoomCode, screen]);
 
     // Determine if game is finished (for sound effect)
     const activeGameStateForEffect = onlineGameStarted ? onlineGameState : gameState;
@@ -439,19 +447,38 @@ export default function VirtualGame() {
                                 </div>
                             </div>
                             <CardTitle>Salle d'attente</CardTitle>
-                            <div className="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors group"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(onlineRoomCode);
-                                    setCopyToast({
-                                        type: 'success',
-                                        message: 'Code copié !',
-                                        timestamp: Date.now()
-                                    });
-                                }}>
-                                <span className="text-xl font-mono tracking-wider font-bold text-slate-700 dark:text-slate-300">
-                                    {onlineRoomCode}
-                                </span>
-                                <Copy className="h-4 w-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                            <div className="mt-2 flex items-center justify-center gap-2">
+                                <div className="flex-1 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors group"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(onlineRoomCode);
+                                        setCopyToast({
+                                            type: 'success',
+                                            message: 'Code copié !',
+                                            timestamp: Date.now()
+                                        });
+                                    }}>
+                                    <span className="text-xl font-mono tracking-wider font-bold text-slate-700 dark:text-slate-300">
+                                        {onlineRoomCode}
+                                    </span>
+                                    <Copy className="h-4 w-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                                </div>
+                                {navigator.share && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-10 px-3 border-blue-300 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                        onClick={() => {
+                                            const playerName = onlinePlayers.find(p => p.id === socketId)?.name || 'Un ami';
+                                            navigator.share({
+                                                title: 'Partie Skyjo',
+                                                text: `${playerName} vous invite à rejoindre une partie de Skyjo en ligne !\n\nCode de salle : ${onlineRoomCode}`,
+                                                url: window.location.href
+                                            }).catch(() => { });
+                                        }}
+                                    >
+                                        <Share2 className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
                             <p className="text-xs text-slate-500 mt-1">Partagez ce code avec vos amis</p>
                         </CardHeader>
