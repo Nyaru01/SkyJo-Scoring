@@ -267,11 +267,16 @@ export const discardAndReveal = (gameState, cardIndex) => {
 
 /**
  * Check and remove completed columns (3 cards of same value)
+ * Returns { gameState, removedCards } where removedCards is an array of cards
+ * that were eliminated from columns (for adding to discard pile)
  */
 export const checkAndRemoveColumns = (gameState) => {
+    let allRemovedCards = [];
+
     const newPlayers = gameState.players.map(player => {
         const hand = [...player.hand];
         const columnsToRemove = [];
+        const removedCardsFromPlayer = [];
 
         // Check each column (0-1-2, 3-4-5, 6-7-8, 9-10-11)
         for (let col = 0; col < 4; col++) {
@@ -284,6 +289,8 @@ export const checkAndRemoveColumns = (gameState) => {
                 cards[1].value === cards[2].value
             ) {
                 columnsToRemove.push(...indices);
+                // Collect the cards being removed (for discard pile)
+                cards.forEach(c => removedCardsFromPlayer.push({ ...c, isRevealed: true }));
             }
         }
 
@@ -291,13 +298,23 @@ export const checkAndRemoveColumns = (gameState) => {
             const newHand = hand.map((card, i) =>
                 columnsToRemove.includes(i) ? null : card
             );
+            allRemovedCards = [...allRemovedCards, ...removedCardsFromPlayer];
             return { ...player, hand: newHand };
         }
 
         return player;
     });
 
-    return { ...gameState, players: newPlayers };
+    // Add removed cards to discard pile (they go ON TOP of the exchanged card)
+    const newDiscardPile = [...gameState.discardPile, ...allRemovedCards];
+
+    return {
+        ...gameState,
+        players: newPlayers,
+        discardPile: newDiscardPile,
+        // Track last eliminated cards for animation purposes
+        lastEliminatedCards: allRemovedCards.length > 0 ? allRemovedCards : null
+    };
 };
 
 /**
