@@ -209,8 +209,8 @@ export default function GameSetup({ onNavigate }) {
                         <Gamepad2 className="h-5 w-5 text-white" />
                     </div>
                     <div className="text-left flex-1">
-                        <p className="font-bold text-slate-800 dark:text-slate-200">Jouer en virtuel</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Mode local ou en ligne</p>
+                        <p className="font-bold" style={{ color: '#e2e8f0' }}>Jouer en virtuel</p>
+                        <p className="text-xs" style={{ color: '#94a3b8' }}>Mode local ou en ligne</p>
                     </div>
                     <span className="text-purple-500 dark:text-purple-400 text-lg">→</span>
                 </div>
