@@ -2,8 +2,12 @@
 
 @import "tailwindcss";
 
-/* Force dark mode via class selector instead of system preference */
-@custom-variant dark (&:where(.dark, .dark *));
+/* Force dark mode - override prefers-color-scheme to always be dark */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: dark;
+  }
+}
 
 @theme {
   --font-sans: 'Outfit', system-ui, sans-serif;
