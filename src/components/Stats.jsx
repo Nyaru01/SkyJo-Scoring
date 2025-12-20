@@ -6,16 +6,16 @@ import { Card, CardContent } from './ui/Card';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 
-// Palette de couleurs pour les joueurs
+// Palette de couleurs pour les joueurs (forced dark theme)
 const PLAYER_COLORS = [
-    { bg: 'bg-emerald-500', light: 'bg-emerald-100', text: 'text-emerald-700', dark: 'dark:bg-emerald-900 dark:text-emerald-300' },
-    { bg: 'bg-blue-500', light: 'bg-blue-100', text: 'text-blue-700', dark: 'dark:bg-blue-900 dark:text-blue-300' },
-    { bg: 'bg-purple-500', light: 'bg-purple-100', text: 'text-purple-700', dark: 'dark:bg-purple-900 dark:text-purple-300' },
-    { bg: 'bg-amber-500', light: 'bg-amber-100', text: 'text-amber-700', dark: 'dark:bg-amber-900 dark:text-amber-300' },
-    { bg: 'bg-rose-500', light: 'bg-rose-100', text: 'text-rose-700', dark: 'dark:bg-rose-900 dark:text-rose-300' },
-    { bg: 'bg-cyan-500', light: 'bg-cyan-100', text: 'text-cyan-700', dark: 'dark:bg-cyan-900 dark:text-cyan-300' },
-    { bg: 'bg-orange-500', light: 'bg-orange-100', text: 'text-orange-700', dark: 'dark:bg-orange-900 dark:text-orange-300' },
-    { bg: 'bg-pink-500', light: 'bg-pink-100', text: 'text-pink-700', dark: 'dark:bg-pink-900 dark:text-pink-300' },
+    { bg: 'bg-emerald-500', light: 'bg-emerald-900/30', text: 'text-emerald-300' },
+    { bg: 'bg-blue-500', light: 'bg-blue-900/30', text: 'text-blue-300' },
+    { bg: 'bg-purple-500', light: 'bg-purple-900/30', text: 'text-purple-300' },
+    { bg: 'bg-amber-500', light: 'bg-amber-900/30', text: 'text-amber-300' },
+    { bg: 'bg-rose-500', light: 'bg-rose-900/30', text: 'text-rose-300' },
+    { bg: 'bg-cyan-500', light: 'bg-cyan-900/30', text: 'text-cyan-300' },
+    { bg: 'bg-orange-500', light: 'bg-orange-900/30', text: 'text-orange-300' },
+    { bg: 'bg-pink-500', light: 'bg-pink-900/30', text: 'text-pink-300' },
 ];
 
 // Animation variants
@@ -29,7 +29,7 @@ const cardVariants = {
 };
 
 // Stat Card Component
-function StatCard({ icon: Icon, title, value, subtitle, colorClass = 'text-emerald-600', index }) {
+function StatCard({ icon: Icon, title, value, subtitle, colorClass = 'text-emerald-500', index }) {
     return (
         <motion.div
             custom={index}
@@ -40,15 +40,15 @@ function StatCard({ icon: Icon, title, value, subtitle, colorClass = 'text-emera
             <Card className="glass-premium shadow-lg hover:shadow-xl transition-shadow">
                 <CardContent className="p-4">
                     <div className="flex items-start justify-between">
-                        <div className={cn("p-2 rounded-xl", colorClass.replace('text-', 'bg-').replace('600', '100'), "dark:bg-opacity-20")}>
-                            <Icon className={cn("h-5 w-5", colorClass, "dark:text-opacity-90")} />
+                        <div className={cn("p-2 rounded-xl", colorClass.replace('text-', 'bg-').replace('600', '900/30').replace('500', '900/30'))}>
+                            <Icon className={cn("h-5 w-5", colorClass)} />
                         </div>
                         <div className="text-right">
-                            <div className="text-2xl font-black text-slate-800 dark:text-slate-100">{value}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">{subtitle}</div>
+                            <div className="text-2xl font-black text-slate-100">{value}</div>
+                            <div className="text-xs text-slate-400 font-medium">{subtitle}</div>
                         </div>
                     </div>
-                    <div className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">{title}</div>
+                    <div className="mt-3 text-sm font-semibold text-slate-300">{title}</div>
                 </CardContent>
             </Card>
         </motion.div>
@@ -66,7 +66,7 @@ function LeaderboardItem({ player, rank, wins, avgScore, colorIndex }) {
             transition={{ delay: rank * 0.1 }}
             className={cn(
                 "flex items-center gap-3 p-3 rounded-xl transition-all",
-                color.light, color.dark
+                color.light
             )}
         >
             {/* Rank Badge */}
@@ -82,16 +82,16 @@ function LeaderboardItem({ player, rank, wins, avgScore, colorIndex }) {
 
             {/* Player Info */}
             <div className="flex-1">
-                <div className={cn("font-bold", color.text, "dark:text-inherit")}>{player.name}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">
+                <div className={cn("font-bold", color.text)}>{player.name}</div>
+                <div className="text-xs text-slate-400">
                     Moy. {avgScore.toFixed(1)} pts/manche
                 </div>
             </div>
 
             {/* Wins */}
             <div className="text-right">
-                <div className="text-lg font-black text-slate-800 dark:text-slate-100">{wins}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">victoire{wins > 1 ? 's' : ''}</div>
+                <div className="text-lg font-black text-slate-100">{wins}</div>
+                <div className="text-xs text-slate-400">victoire{wins > 1 ? 's' : ''}</div>
             </div>
         </motion.div>
     );
@@ -249,13 +249,13 @@ export default function Stats() {
     if (!stats) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-4">
                     <TrendingUp className="h-10 w-10 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">
+                <h3 className="text-lg font-bold text-slate-300 mb-2">
                     Pas encore de statistiques
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                <p className="text-sm text-slate-400 max-w-xs">
                     Jouez quelques parties pour voir vos statistiques apparaître ici !
                 </p>
             </div>
@@ -271,8 +271,8 @@ export default function Stats() {
                         <TrendingUp className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-slate-800 dark:text-slate-100">Statistiques</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                        <h2 className="text-xl font-black text-slate-100">Statistiques</h2>
+                        <p className="text-sm text-slate-400">
                             {stats.totalGames} partie{stats.totalGames > 1 ? 's' : ''} jouée{stats.totalGames > 1 ? 's' : ''}
                         </p>
                     </div>
@@ -289,7 +289,7 @@ export default function Stats() {
                         variant="ghost"
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
+                        className="text-slate-400 hover:text-emerald-400"
                         title="Importer"
                     >
                         <Upload className="h-4 w-4" />
@@ -298,7 +298,7 @@ export default function Stats() {
                         variant="ghost"
                         size="sm"
                         onClick={handleExport}
-                        className="text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
+                        className="text-slate-400 hover:text-emerald-400"
                         title="Exporter"
                     >
                         <Download className="h-4 w-4" />
@@ -348,8 +348,8 @@ export default function Stats() {
 
             {/* Leaderboard */}
             <Card className="glass-premium shadow-xl overflow-hidden">
-                <div className="p-4 border-b border-white/20 dark:border-white/10 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <div className="p-4 border-b border-white/10 bg-gradient-to-r from-amber-900/20 to-orange-900/20">
+                    <h3 className="font-bold text-slate-100 flex items-center gap-2">
                         <Award className="h-5 w-5 text-amber-500" />
                         Classement des joueurs
                     </h3>
@@ -371,8 +371,8 @@ export default function Stats() {
             {/* Player Details */}
             {stats.players.length > 0 && (
                 <Card className="glass-premium shadow-lg">
-                    <div className="p-4 border-b border-white/20 dark:border-white/10">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <div className="p-4 border-b border-white/10">
+                        <h3 className="font-bold text-slate-100 flex items-center gap-2">
                             <Users className="h-5 w-5 text-teal-500" />
                             Détails par joueur
                         </h3>
