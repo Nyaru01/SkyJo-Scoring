@@ -10,6 +10,7 @@ import DrawDiscard from './virtual/DrawDiscard';
 import SkyjoCard from './virtual/SkyjoCard';
 import { useVirtualGameStore } from '../store/virtualGameStore';
 import { useOnlineGameStore } from '../store/onlineGameStore';
+import { useGameStore } from '../store/gameStore';
 import { calculateFinalScores } from '../lib/skyjoEngine';
 import { useFeedback } from '../hooks/useFeedback';
 import { cn } from '../lib/utils';
@@ -60,12 +61,17 @@ export default function VirtualGame() {
     const onlineTotalScores = useOnlineGameStore(s => s.totalScores);
     const onlineRoundNumber = useOnlineGameStore(s => s.roundNumber);
     const onlineGameStarted = useOnlineGameStore(s => s.gameStarted);
+    const onlineIsGameOver = useOnlineGameStore(s => s.isGameOver);
+    const onlineGameWinner = useOnlineGameStore(s => s.gameWinner);
     const onlineError = useOnlineGameStore(s => s.error);
     const onlineRoomCode = useOnlineGameStore(s => s.roomCode);
     const onlineIsHost = useOnlineGameStore(s => s.isHost);
     const socketId = useOnlineGameStore(s => s.socketId);
     const lastNotification = useOnlineGameStore(s => s.lastNotification);
     const lastAction = useOnlineGameStore(s => s.lastAction);
+
+    // Main game store for archiving
+    const archiveOnlineGame = useGameStore(s => s.archiveOnlineGame);
 
     // Online Actions
     const connectOnline = useOnlineGameStore(s => s.connect);
@@ -119,6 +125,26 @@ export default function VirtualGame() {
             setHasPlayedVictory(false);
         }
     }, [isGameFinished, hasPlayedVictory, playVictory]);
+
+    // Track if we've archived the current online game
+    const [hasArchivedOnline, setHasArchivedOnline] = useState(false);
+
+    // Archive online game when it ends
+    useEffect(() => {
+        if (onlineIsGameOver && onlineGameStarted && !hasArchivedOnline) {
+            archiveOnlineGame({
+                players: onlinePlayers,
+                totalScores: onlineTotalScores,
+                winner: onlineGameWinner,
+                roundsPlayed: onlineRoundNumber
+            });
+            setHasArchivedOnline(true);
+        }
+        // Reset when starting a new game
+        if (!onlineIsGameOver && hasArchivedOnline) {
+            setHasArchivedOnline(false);
+        }
+    }, [onlineIsGameOver, onlineGameStarted, hasArchivedOnline, onlinePlayers, onlineTotalScores, onlineGameWinner, onlineRoundNumber, archiveOnlineGame]);
 
     // Add player
     const addPlayer = () => {
@@ -832,7 +858,7 @@ export default function VirtualGame() {
                     </span>
                 </div>
                 <div className="text-xs text-slate-500">
-                    Manche {activeGameState.roundNumber || 1}
+                    Manche {activeRoundNumber}
                 </div>
             </div>
 

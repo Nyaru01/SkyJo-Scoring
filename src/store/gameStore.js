@@ -147,6 +147,50 @@ export const useGameStore = create(
             },
 
             /**
+             * Archive an online game to history
+             * @param {Object} params - Online game data
+             * @param {Array} params.players - Array of player objects with name, emoji
+             * @param {Object} params.totalScores - Map of player id to total score
+             * @param {Object} params.winner - Winner object with name, emoji, score
+             * @param {number} params.roundsPlayed - Number of rounds played
+             */
+            archiveOnlineGame: ({ players, totalScores, winner, roundsPlayed }) => {
+                const { gameHistory } = get();
+                if (!players || players.length === 0) return;
+
+                // Convert online format to archive format
+                const playersWithScores = players.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    emoji: p.emoji,
+                    finalScore: totalScores[p.id] || 0
+                })).sort((a, b) => a.finalScore - b.finalScore);
+
+                const archivedGame = {
+                    id: `game-online-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    players: playersWithScores,
+                    rounds: [], // Online games don't track individual rounds the same way
+                    threshold: 100,
+                    winner: winner ? {
+                        id: winner.id || 'online-winner',
+                        name: winner.name,
+                        score: winner.score
+                    } : playersWithScores[0] ? {
+                        id: playersWithScores[0].id,
+                        name: playersWithScores[0].name,
+                        score: playersWithScores[0].finalScore
+                    } : null,
+                    isOnlineGame: true,
+                    roundsPlayed: roundsPlayed || 1
+                };
+
+                // Add to history (newest first), keep max 50 games
+                const updatedHistory = [archivedGame, ...gameHistory].slice(0, 50);
+                set({ gameHistory: updatedHistory });
+            },
+
+            /**
              * Delete a game from history
              */
             deleteArchivedGame: (gameId) => {
