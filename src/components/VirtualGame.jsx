@@ -264,7 +264,7 @@ export default function VirtualGame() {
     // Render menu screen
     if (screen === 'menu') {
         return (
-            <div className="max-w-md mx-auto p-4 space-y-6 animate-in fade-in">
+            <div className="max-w-md mx-auto p-4 pt-16 space-y-6 animate-in fade-in">
                 <Card className="glass-premium dark:glass-dark shadow-xl overflow-hidden">
                     <div className="absolute inset-0 animate-shimmer opacity-10 pointer-events-none" />
                     <CardHeader className="text-center">
@@ -300,7 +300,7 @@ export default function VirtualGame() {
                             }}
                         >
                             <Wifi className="mr-2 h-5 w-5" />
-                            En Ligne (Versus)
+                            En Ligne (1v1)
                         </Button>
 
                         <div className="mt-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400">
