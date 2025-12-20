@@ -982,17 +982,17 @@ export default function VirtualGame() {
         if (isGameOver && gameWinner) {
             return (
                 <div className="max-w-md mx-auto p-4 space-y-4 animate-in fade-in">
-                    <Card className="glass-premium dark:glass-dark shadow-xl overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-amber-100/50 to-orange-100/50 dark:from-amber-900/20 dark:to-orange-900/20" />
+                    <Card className="glass-premium shadow-xl overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 to-orange-900/20" />
                         <CardHeader className="text-center relative">
                             <div className="relative">
                                 <Trophy className="h-20 w-20 mx-auto text-amber-500 mb-2" />
                                 <Sparkles className="absolute top-0 right-1/3 h-6 w-6 text-yellow-400 animate-pulse" />
                             </div>
-                            <CardTitle className="text-2xl text-amber-700 dark:text-amber-400">
+                            <CardTitle className="text-2xl text-amber-400">
                                 🎉 Fin de partie ! 🎉
                             </CardTitle>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                            <p className="text-slate-400 text-sm mt-1">
                                 Après {roundNumber} manche{roundNumber > 1 ? 's' : ''}
                             </p>
                         </CardHeader>
@@ -1001,13 +1001,13 @@ export default function VirtualGame() {
                             <motion.div
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                className="text-center p-4 bg-gradient-to-r from-amber-200 to-yellow-200 dark:from-amber-900/50 dark:to-yellow-900/50 rounded-xl"
+                                className="text-center p-4 bg-gradient-to-r from-amber-900/50 to-yellow-900/50 rounded-xl"
                             >
                                 <span className="text-4xl block mb-2">{gameWinner.emoji}</span>
-                                <span className="text-xl font-bold text-amber-800 dark:text-amber-200">
+                                <span className="text-xl font-bold text-amber-200">
                                     {gameWinner.name} gagne !
                                 </span>
-                                <span className="text-sm text-amber-600 dark:text-amber-400 block mt-1">
+                                <span className="text-sm text-amber-400 block mt-1">
                                     Score final : {gameWinner.score} pts
                                 </span>
                             </motion.div>
@@ -1025,17 +1025,17 @@ export default function VirtualGame() {
                                             key={player.id}
                                             className={cn(
                                                 "flex items-center justify-between p-2 rounded-lg",
-                                                index === 0 ? "bg-amber-100/50 dark:bg-amber-900/30" : "bg-white/30 dark:bg-white/5"
+                                                index === 0 ? "bg-amber-900/30" : "bg-white/5"
                                             )}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold text-slate-400">#{index + 1}</span>
                                                 <span>{player.emoji}</span>
-                                                <span className="font-medium text-slate-700 dark:text-slate-300">{player.name}</span>
+                                                <span className="font-medium text-slate-300">{player.name}</span>
                                             </div>
                                             <span className={cn(
                                                 "font-bold",
-                                                player.total >= 100 ? "text-red-600" : "text-slate-700 dark:text-slate-300"
+                                                player.total >= 100 ? "text-red-500" : "text-slate-300"
                                             )}>
                                                 {player.total} pts
                                             </span>
@@ -1069,11 +1069,11 @@ export default function VirtualGame() {
         // Regular end-of-round screen
         return (
             <div className="max-w-md mx-auto p-4 space-y-4 animate-in fade-in">
-                <Card className="glass-premium dark:glass-dark shadow-xl overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-100/50 to-orange-100/50 dark:from-amber-900/20 dark:to-orange-900/20" />
+                <Card className="glass-premium shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/20 to-orange-900/20" />
                     <CardHeader className="text-center relative">
                         <Trophy className="h-16 w-16 mx-auto text-amber-500 mb-2 animate-bounce" />
-                        <CardTitle className="text-2xl text-amber-700 dark:text-amber-400">
+                        <CardTitle className="text-2xl text-amber-400">
                             Fin de la manche {roundNumber}
                         </CardTitle>
                         {gameEndsAfterThisRound && (
@@ -1093,19 +1093,19 @@ export default function VirtualGame() {
                                 className={cn(
                                     "flex items-center justify-between p-3 rounded-xl",
                                     index === 0
-                                        ? "bg-gradient-to-r from-amber-200 to-yellow-200 dark:from-amber-900/50 dark:to-yellow-900/50"
-                                        : "bg-white/50 dark:bg-white/5"
+                                        ? "bg-gradient-to-r from-amber-900/50 to-yellow-900/50"
+                                        : "bg-white/5"
                                 )}
                             >
                                 <div className="flex items-center gap-3">
                                     <span className="text-2xl font-bold text-slate-400">
                                         #{index + 1}
                                     </span>
-                                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                                    <span className="font-medium text-slate-200">
                                         {score.playerName}
                                     </span>
                                     {score.isFinisher && (
-                                        <span className="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">
+                                        <span className="text-xs bg-emerald-900 text-emerald-300 px-2 py-0.5 rounded-full">
                                             Finisseur
                                         </span>
                                     )}
@@ -1113,7 +1113,7 @@ export default function VirtualGame() {
                                 <div className="text-right">
                                     <span className={cn(
                                         "text-lg font-bold",
-                                        score.penalized ? "text-red-600" : "text-slate-800 dark:text-slate-200"
+                                        score.penalized ? "text-red-500" : "text-slate-200"
                                     )}>
                                         +{score.finalScore}
                                     </span>
