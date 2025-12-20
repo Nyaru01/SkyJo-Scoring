@@ -9,7 +9,8 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
+  /* Force dark mode regardless of system theme */
+  color-scheme: dark only;
   color: #e2e8f0;
   background-color: #0f172a;
 
@@ -17,6 +18,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force light text globally - override system theme */
+html,
+body,
+#root {
+  color-scheme: dark only !important;
+  color: #e2e8f0 !important;
+}
+
+/* Force light text in glass containers */
+.glass-premium,
+.glass-dark {
+  color: #e2e8f0 !important;
 }
 
 body {
