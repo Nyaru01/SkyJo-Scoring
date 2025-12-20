@@ -281,6 +281,25 @@ body,
   animation: pulse-glow 2s ease-in-out infinite;
 }
 
+/* Animation pulse-slow pour le halo du joueur actif */
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3);
+  }
+
+  50% {
+    opacity: 0.95;
+    box-shadow: 0 0 50px rgba(52, 211, 153, 0.8), 0 0 80px rgba(52, 211, 153, 0.4);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2.5s ease-in-out infinite;
+}
+
 /* Animation scale-in pour les cartes */
 @keyframes scale-in {
   0% {

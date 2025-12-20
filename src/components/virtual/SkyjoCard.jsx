@@ -22,6 +22,7 @@ const SkyjoCard = memo(function SkyjoCard({
             <div
                 className={cn(
                     "rounded-lg border-2 border-dashed border-slate-300/50 dark:border-slate-600/50",
+                    size === 'xs' && "w-7 h-10",
                     size === 'sm' && "w-10 h-14",
                     size === 'md' && "w-14 h-20",
                     size === 'lg' && "w-16 h-24",
@@ -35,6 +36,7 @@ const SkyjoCard = memo(function SkyjoCard({
     const isRevealed = card.isRevealed;
 
     const sizeClasses = {
+        xs: "w-7 h-10 text-sm",
         sm: "w-10 h-14 text-lg",
         md: "w-14 h-20 text-2xl",
         lg: "w-16 h-24 text-3xl",

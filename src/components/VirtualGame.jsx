@@ -12,7 +12,7 @@ import { useVirtualGameStore, selectAIMode, selectAIPlayers, selectIsCurrentPlay
 import { useOnlineGameStore } from '../store/onlineGameStore';
 import { useGameStore } from '../store/gameStore';
 import { calculateFinalScores } from '../lib/skyjoEngine';
-import { AI_DIFFICULTY } from '../lib/skyjoAI';
+import { AI_DIFFICULTY, chooseInitialCardsToReveal } from '../lib/skyjoAI';
 import { useFeedback } from '../hooks/useFeedback';
 import { cn } from '../lib/utils';
 import { Copy, Wifi, WifiOff, Share2 } from 'lucide-react';
@@ -63,6 +63,7 @@ export default function VirtualGame() {
     const aiPlayers = useVirtualGameStore(selectAIPlayers);
     const isCurrentPlayerAI = useVirtualGameStore(selectIsCurrentPlayerAI);
     const isAIThinking = useVirtualGameStore(selectIsAIThinking);
+    const aiDifficulty = useVirtualGameStore((s) => s.aiDifficulty);
 
     // Online Store
     const isOnlineConnected = useOnlineGameStore(s => s.isConnected);
@@ -177,12 +178,39 @@ export default function VirtualGame() {
     useEffect(() => {
         if (!aiMode || !gameState) return;
         if (gameState.phase === 'FINISHED') return;
+
+        // During initial reveal, AI players should automatically reveal their cards
+        // NOTE: In INITIAL_REVEAL phase, currentPlayerIndex stays at 0 - all players reveal simultaneously
+        if (gameState.phase === 'INITIAL_REVEAL') {
+            // Find AI players that still need to reveal their cards
+            const aiNeedingReveal = aiPlayers.filter(aiIndex => {
+                const aiPlayer = gameState.players[aiIndex];
+                if (!aiPlayer) return false;
+                const revealedCount = aiPlayer.hand.filter(c => c && c.isRevealed).length;
+                return revealedCount < 2;
+            });
+
+            // If any AI still needs to reveal, do it one at a time with delay
+            if (aiNeedingReveal.length > 0) {
+                const firstAIToReveal = aiNeedingReveal[0];
+                setAIThinking(true);
+                const timer = setTimeout(() => {
+                    // Manually reveal for this AI player
+                    const aiPlayer = gameState.players[firstAIToReveal];
+                    const cardsToReveal = chooseInitialCardsToReveal(aiPlayer.hand, aiDifficulty);
+                    revealInitial(firstAIToReveal, cardsToReveal);
+                    setAIThinking(false);
+                }, 800);
+                return () => clearTimeout(timer);
+            }
+            return;
+        }
+
+        // Regular gameplay - only current AI player acts
         if (!isCurrentPlayerAI) return;
 
-        // Set AI thinking state and execute turn after delay
         setAIThinking(true);
-
-        const delay = gameState.phase === 'INITIAL_REVEAL' ? 800 : 1200;
+        const delay = 1200;
         const timer = setTimeout(() => {
             executeAITurn();
 
@@ -202,7 +230,7 @@ export default function VirtualGame() {
         }, delay);
 
         return () => clearTimeout(timer);
-    }, [aiMode, gameState?.currentPlayerIndex, gameState?.phase, gameState?.turnPhase, isCurrentPlayerAI, executeAITurn, setAIThinking]);
+    }, [aiMode, gameState?.currentPlayerIndex, gameState?.phase, gameState?.turnPhase, isCurrentPlayerAI, aiPlayers, executeAITurn, setAIThinking, gameState, aiDifficulty, revealInitial]);
 
     // Add player
     const addPlayer = () => {
@@ -543,12 +571,12 @@ export default function VirtualGame() {
                                         key={count}
                                         variant={aiConfig.aiCount === count ? 'default' : 'outline'}
                                         className={cn(
-                                            "flex-1",
+                                            "flex-1 flex items-center justify-center gap-1",
                                             aiConfig.aiCount === count && "bg-purple-600 hover:bg-purple-700 text-white"
                                         )}
                                         onClick={() => setAIConfig({ ...aiConfig, aiCount: count })}
                                     >
-                                        {count} 🤖
+                                        {count} <Bot className="h-4 w-4" />
                                     </Button>
                                 ))}
                             </div>
@@ -557,36 +585,36 @@ export default function VirtualGame() {
                         {/* Difficulty */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium" style={{ color: '#cbd5e1' }}>Difficulté</label>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                                 <Button
                                     variant={aiConfig.difficulty === AI_DIFFICULTY.EASY ? 'default' : 'outline'}
                                     className={cn(
-                                        "flex-1",
+                                        "w-full px-2 text-sm",
                                         aiConfig.difficulty === AI_DIFFICULTY.EASY && "bg-green-600 hover:bg-green-700 text-white"
                                     )}
                                     onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.EASY })}
                                 >
-                                    😊 Facile
+                                    Facile
                                 </Button>
                                 <Button
                                     variant={aiConfig.difficulty === AI_DIFFICULTY.NORMAL ? 'default' : 'outline'}
                                     className={cn(
-                                        "flex-1",
+                                        "w-full px-2 text-sm",
                                         aiConfig.difficulty === AI_DIFFICULTY.NORMAL && "bg-amber-600 hover:bg-amber-700 text-white"
                                     )}
                                     onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.NORMAL })}
                                 >
-                                    🤔 Normal
+                                    Normal
                                 </Button>
                                 <Button
                                     variant={aiConfig.difficulty === AI_DIFFICULTY.HARD ? 'default' : 'outline'}
                                     className={cn(
-                                        "flex-1",
+                                        "w-full px-2 text-sm",
                                         aiConfig.difficulty === AI_DIFFICULTY.HARD && "bg-red-600 hover:bg-red-700 text-white"
                                     )}
                                     onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.HARD })}
                                 >
-                                    😈 Difficile
+                                    Difficile
                                 </Button>
                             </div>
                         </div>
@@ -1340,41 +1368,67 @@ export default function VirtualGame() {
                 </div>
             )}
 
-            {/* Additional players (if more than 2) */}
+            {/* Additional players (if more than 2 - players at index 2+) */}
             {activeGameState.players.length > 2 && (
-                <div className="mt-4">
-                    <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
-                        Autres joueurs
+                <div className="mt-4 pb-20">
+                    <h3 className="text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wide text-center">
+                        Autres adversaires ({activeGameState.players.length - 2} IA)
                     </h3>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
                         {activeGameState.players.slice(2).map((player, displayIndex) => {
                             const actualIndex = displayIndex + 2;
+                            const isAI = aiPlayers.includes(actualIndex);
                             return (
                                 <div
                                     key={player.id}
-                                    className="relative rounded-2xl transition-all duration-500"
+                                    className={cn(
+                                        "relative rounded-xl p-2 transition-all duration-300",
+                                        !isInitialReveal && activeGameState.currentPlayerIndex === actualIndex
+                                            ? "bg-gradient-to-br from-emerald-500/30 to-teal-500/30 ring-2 ring-emerald-400"
+                                            : "bg-slate-800/40"
+                                    )}
                                 >
-                                    <PlayerHand
-                                        player={player}
-                                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === actualIndex}
-                                        canInteract={
-                                            isInitialReveal ||
-                                            (activeGameState.currentPlayerIndex === actualIndex && (
-                                                activeGameState.turnPhase === 'REPLACE_OR_DISCARD' ||
-                                                activeGameState.turnPhase === 'MUST_REPLACE' ||
-                                                activeGameState.turnPhase === 'MUST_REVEAL'
-                                            ))
-                                        }
-                                        onCardClick={(index) => {
-                                            if (isInitialReveal) {
-                                                handleInitialReveal(actualIndex, index);
-                                            } else {
-                                                if (activeGameState.currentPlayerIndex !== actualIndex) return;
-                                                handleCardClick(index);
-                                            }
-                                        }}
-                                        size="sm"
-                                    />
+                                    {/* Compact name badge */}
+                                    <div className={cn(
+                                        "flex items-center gap-2 mb-2 px-2 py-1 rounded-lg text-sm font-medium",
+                                        !isInitialReveal && activeGameState.currentPlayerIndex === actualIndex
+                                            ? "bg-emerald-500 text-white"
+                                            : "bg-slate-700 text-slate-200"
+                                    )}>
+                                        {isAI && <Bot className="h-4 w-4" />}
+                                        <span className="truncate">{player.name}</span>
+                                        {!isInitialReveal && activeGameState.currentPlayerIndex === actualIndex && (
+                                            <span className="ml-auto animate-pulse">🎯</span>
+                                        )}
+                                    </div>
+
+                                    {/* Compact card grid */}
+                                    <div className="grid grid-cols-4 gap-0.5">
+                                        {player.hand.map((card, cardIdx) => {
+                                            const row = cardIdx % 3;
+                                            const col = Math.floor(cardIdx / 3);
+                                            const actualCardIdx = col * 3 + row;
+                                            return (
+                                                <SkyjoCard
+                                                    key={cardIdx}
+                                                    card={player.hand[actualCardIdx]}
+                                                    size="xs"
+                                                    isClickable={false}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Mini score */}
+                                    <div className="text-center mt-1">
+                                        <span className="text-xs text-slate-400">
+                                            Score: <span className="font-bold text-slate-200">
+                                                {player.hand
+                                                    .filter((c) => c?.isRevealed)
+                                                    .reduce((sum, c) => sum + c.value, 0)}
+                                            </span>
+                                        </span>
+                                    </div>
                                 </div>
                             );
                         })}

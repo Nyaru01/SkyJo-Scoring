@@ -41,10 +41,13 @@ const PlayerHand = memo(function PlayerHand({
             className={cn(
                 "relative p-3 rounded-2xl transition-all duration-300",
                 isCurrentPlayer
-                    ? "bg-gradient-to-br from-emerald-200/90 to-teal-200/90 dark:from-emerald-800/60 dark:to-teal-800/60 ring-4 ring-emerald-400 shadow-xl shadow-emerald-500/40"
+                    ? "bg-gradient-to-br from-emerald-200/90 to-teal-200/90 dark:from-emerald-800/60 dark:to-teal-800/60 ring-4 ring-emerald-400 shadow-2xl shadow-emerald-500/50 animate-pulse-slow"
                     : "bg-slate-100/50 dark:bg-slate-800/30",
                 isLocalPlayer && "border-2 border-amber-400"
             )}
+            style={isCurrentPlayer ? {
+                boxShadow: '0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3), 0 0 90px rgba(52, 211, 153, 0.1)'
+            } : undefined}
         >
             {/* Player name badge */}
             {showName && (
