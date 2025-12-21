@@ -47,11 +47,11 @@ const PlayerHand = memo(function PlayerHand({
             className={cn(
                 "relative transition-all duration-300",
                 isCurrentPlayer && !isOpponent
-                    ? "ring-4 ring-emerald-400 shadow-2xl shadow-emerald-500/50 animate-pulse-slow"
+                    ? "border-[3px] border-emerald-400"
                     : isCurrentPlayer && isOpponent
-                        ? "ring-4 ring-blue-400 shadow-2xl shadow-blue-500/50 animate-pulse-slow"
-                        : "",
-                isLocalPlayer && "border-2 border-amber-400"
+                        ? "border-[3px] border-blue-400"
+                        : "border border-[#333333]", // Default subtle border
+                isLocalPlayer && !isCurrentPlayer && "border-2 border-amber-400/50" // Subtle highlight for self when not turn
             )}
             style={{
                 // 85% black overlay + 20px blur + proper styling
@@ -60,11 +60,11 @@ const PlayerHand = memo(function PlayerHand({
                 WebkitBackdropFilter: 'blur(20px)',
                 padding: '18px 16px 16px 16px', // Reduced top padding
                 borderRadius: '20px', // Softer corners
-                border: '1px solid #333333', // Subtle border
+                // Border handled by className for active state, remove inline default
                 ...(isCurrentPlayer ? {
                     boxShadow: isOpponent
-                        ? '0 0 30px rgba(96, 165, 250, 0.6), 0 0 60px rgba(96, 165, 250, 0.3)'
-                        : '0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3)'
+                        ? '0 0 15px rgba(96, 165, 250, 0.4)'
+                        : '0 0 15px rgba(52, 211, 153, 0.4)'
                 } : {})
             }}
         >

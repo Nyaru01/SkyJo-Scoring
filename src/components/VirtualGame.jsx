@@ -1223,12 +1223,23 @@ export default function VirtualGame() {
                         size="sm"
                         onClick={toggleMusic}
                         className={cn(
-                            "h-6 w-6 p-0 rounded-full",
-                            musicEnabled ? "bg-emerald-500/10 text-emerald-400" : "text-slate-500"
+                            "h-6 w-6 p-0 rounded-full transition-all duration-500 relative overflow-visible",
+                            musicEnabled
+                                ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-400/50 shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+                                : "text-slate-500 hover:bg-slate-800"
                         )}
                         title={musicEnabled ? "Couper la musique" : "Activer la musique"}
                     >
-                        {musicEnabled ? <Music className="h-3.5 w-3.5" /> : <Music2 className="h-3.5 w-3.5 opacity-50" />}
+                        {/* Ping effect behind the button */}
+                        {musicEnabled && (
+                            <span className="absolute inset-0 rounded-full bg-emerald-400/30 animate-[ping_2s_ease-in-out_infinite] opacity-50" />
+                        )}
+
+                        {musicEnabled ? (
+                            <Music className="h-3.5 w-3.5 relative z-10 animate-[bounce_2s_infinite]" />
+                        ) : (
+                            <Music2 className="h-3.5 w-3.5 opacity-50 relative z-10" />
+                        )}
                     </Button>
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                         MANCHE {activeRoundNumber}
