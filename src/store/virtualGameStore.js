@@ -244,10 +244,52 @@ export const useVirtualGameStore = create((set, get) => ({
         set({ gameState: newState, selectedCardIndex: null });
     },
 
+    discardDrawnCard: () => {
+        const { gameState } = get();
+        if (!gameState || !gameState.drawnCard) return;
+
+        // Move drawn card to discard pile
+        const newDiscardPile = [...gameState.discardPile, { ...gameState.drawnCard, isRevealed: true }];
+
+        set({
+            gameState: {
+                ...gameState,
+                discardPile: newDiscardPile,
+                drawnCard: null,
+                turnPhase: 'MUST_REVEAL' // New phase: player MUST reveal a hidden card
+            }
+        });
+    },
+
     /**
-     * Discard the drawn card (put it on discard pile)
-     * Player must then select a hidden card to reveal
+     * Reveal a card on the grid (used when in MUST_REVEAL phase)
      */
+    revealGridCard: (cardIndex) => {
+        const { gameState } = get();
+        if (!gameState || gameState.turnPhase !== 'MUST_REVEAL') return;
+
+        const player = gameState.players[gameState.currentPlayerIndex];
+        // Can only reveal hidden cards
+        if (player.hand[cardIndex]?.isRevealed) return;
+
+        // Reveal the card
+        const newHand = [...player.hand];
+        newHand[cardIndex] = { ...newHand[cardIndex], isRevealed: true };
+
+        const newPlayers = [...gameState.players];
+        newPlayers[gameState.currentPlayerIndex] = { ...player, hand: newHand };
+
+        // After revealing, turn ends
+        let newState = {
+            ...gameState,
+            players: newPlayers,
+            turnPhase: 'DRAW' // Reset for next turn logic inside endTurn
+        };
+
+        // Use engine's endTurn to handle column clearing and next player
+        newState = endTurn(newState);
+        set({ gameState: newState });
+    },
     discardDrawnCard: () => {
         const { gameState } = get();
         if (!gameState || gameState.turnPhase !== 'REPLACE_OR_DISCARD') return;
@@ -307,6 +349,27 @@ export const useVirtualGameStore = create((set, get) => ({
         const { gameState } = get();
         if (!gameState) return null;
         return getValidActions(gameState);
+    },
+
+    /**
+     * Undo taking from discard (if user changes mind/closes popup)
+     * Puts the drawn card back to discard pile and resets phase
+     */
+    undoTakeFromDiscard: () => {
+        const { gameState } = get();
+        if (!gameState || !gameState.drawnCard || gameState.turnPhase !== 'MUST_REPLACE') return;
+
+        // Revert: put drawn card back to discard pile
+        const newDiscardPile = [...gameState.discardPile, gameState.drawnCard];
+
+        set({
+            gameState: {
+                ...gameState,
+                discardPile: newDiscardPile,
+                drawnCard: null,
+                turnPhase: 'DRAW'
+            }
+        });
     },
 
     /**

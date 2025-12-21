@@ -45,7 +45,7 @@ const PlayerHand = memo(function PlayerHand({
     return (
         <div
             className={cn(
-                "relative rounded-2xl transition-all duration-300",
+                "relative transition-all duration-300",
                 isCurrentPlayer && !isOpponent
                     ? "ring-4 ring-emerald-400 shadow-2xl shadow-emerald-500/50 animate-pulse-slow"
                     : isCurrentPlayer && isOpponent
@@ -54,23 +54,25 @@ const PlayerHand = memo(function PlayerHand({
                 isLocalPlayer && "border-2 border-amber-400"
             )}
             style={{
-                // 85% black overlay behind cards + 20px blur for better contrast
+                // 85% black overlay + 20px blur + proper styling
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                padding: '16px 12px 12px 12px',
+                padding: '24px 16px 16px 16px', // More top padding for badge
+                borderRadius: '20px', // Softer corners
+                border: '1px solid #333333', // Subtle border
                 ...(isCurrentPlayer ? {
                     boxShadow: isOpponent
-                        ? '0 0 30px rgba(96, 165, 250, 0.6), 0 0 60px rgba(96, 165, 250, 0.3), 0 0 90px rgba(96, 165, 250, 0.1)'
-                        : '0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3), 0 0 90px rgba(52, 211, 153, 0.1)'
+                        ? '0 0 30px rgba(96, 165, 250, 0.6), 0 0 60px rgba(96, 165, 250, 0.3)'
+                        : '0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3)'
                 } : {})
             }}
         >
-            {/* Player label with score - COMPACT design */}
+            {/* Player label with score - 16px margin from grid */}
             {showName && (
                 <div
                     className={cn(
-                        "absolute left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full font-bold shadow-md whitespace-nowrap uppercase tracking-wide flex items-center gap-1.5",
+                        "absolute left-1/2 -translate-x-1/2 px-3 py-1 rounded-full font-bold shadow-lg whitespace-nowrap uppercase tracking-wide flex items-center gap-2",
                         isCurrentPlayer && !isOpponent
                             ? "bg-emerald-500 text-white"
                             : isCurrentPlayer && isOpponent
@@ -80,39 +82,39 @@ const PlayerHand = memo(function PlayerHand({
                                     : "bg-emerald-600 text-white"
                     )}
                     style={{
-                        fontSize: '11px',
+                        fontSize: '12px',
                         zIndex: 50,
-                        top: '-12px',
+                        top: '-16px', // 16px margin from grid
                     }}
                 >
                     {isOpponent ? (
-                        <span>🤖 BOT</span>
+                        <span className="text-base">🤖 BOT</span>
                     ) : (
-                        <span>VOUS</span>
+                        <span className="text-base">👤 VOUS</span>
                     )}
-                    {/* Score displayed compactly next to label */}
+                    {/* Score: 16pt minimum, bold */}
                     <span
                         className="font-black"
                         style={{
-                            fontSize: '13pt',
+                            fontSize: '16pt',
                             fontFamily: "'Outfit', system-ui, sans-serif",
                         }}
                     >
                         {currentScore}
                     </span>
                     {isCurrentPlayer && (
-                        <span className="animate-pulse text-xs">🎯</span>
+                        <span className="animate-pulse text-sm">🎯</span>
                     )}
                 </div>
             )}
 
-            {/* Card grid: strict 4 columns x 3 rows with 12px gap */}
+            {/* Card grid: 16px margin from badge, strict 12px gap */}
             <motion.div
                 style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '12px',
-                    marginTop: '10px', // 10px margin from badge area
+                    marginTop: '16px', // 16px margin from badge area
                     justifyItems: 'center',
                 }}
                 variants={containerVariants}
@@ -128,7 +130,7 @@ const PlayerHand = memo(function PlayerHand({
                             <motion.div
                                 key={`${row}-${col}`}
                                 variants={cardVariants}
-                                style={{ position: 'relative', zIndex: 1 }} // Lower z-index than badge
+                                style={{ position: 'relative', zIndex: 1 }}
                             >
                                 <SkyjoCard
                                     card={card}

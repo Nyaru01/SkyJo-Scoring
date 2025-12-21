@@ -19,28 +19,28 @@ const SkyjoCard = memo(function SkyjoCard({
     onClick,
     className,
 }) {
-    // Dynamic sizing based on viewport - STANDARD 3:4 RATIO (width:height)
-    // Cards should be wider, not elongated like dominos
+    // Dynamic sizing based on viewport - STRICT 2:3 RATIO (width:height)
+    // Cards use standard playing card proportions
     const sizeStyles = {
         xs: {
-            width: 'clamp(1.5rem, 5vw, 2.25rem)',      // Wider
-            height: 'clamp(2rem, 6.5vh, 3rem)',        // 3:4 ratio
-            fontSize: 'clamp(0.6rem, 1.8vw, 0.9rem)'
+            width: 'clamp(1.5rem, 5vw, 2.25rem)',
+            height: 'clamp(2.25rem, 7.5vh, 3.375rem)', // 2:3 ratio
+            fontSize: 'clamp(0.8rem, 2.4vw, 1.2rem)'
         },
         sm: {
-            width: 'clamp(2.25rem, 6.5vw, 3.25rem)',   // Wider
-            height: 'clamp(3rem, 8.5vh, 4.33rem)',     // 3:4 ratio
-            fontSize: 'clamp(0.9rem, 2.4vw, 1.2rem)'
+            width: 'clamp(2.25rem, 6.5vw, 3rem)',
+            height: 'clamp(3.375rem, 9.75vh, 4.5rem)', // 2:3 ratio
+            fontSize: 'clamp(1.1rem, 3vw, 1.5rem)'
         },
         md: {
-            width: 'clamp(3rem, 8vw, 4rem)',           // Wider: ~48-64px
-            height: 'clamp(4rem, 10.5vh, 5.33rem)',    // 3:4 ratio: ~64-85px
-            fontSize: 'clamp(1.1rem, 3vw, 1.8rem)'
+            width: 'clamp(2.75rem, 7.5vw, 3.5rem)',
+            height: 'clamp(4.125rem, 11.25vh, 5.25rem)', // 2:3 ratio
+            fontSize: 'clamp(1.3rem, 3.5vw, 2rem)'
         },
         lg: {
-            width: 'clamp(3.5rem, 9vw, 4.75rem)',      // Wider
-            height: 'clamp(4.67rem, 12vh, 6.33rem)',   // 3:4 ratio
-            fontSize: 'clamp(1.3rem, 3.6vw, 2.2rem)'
+            width: 'clamp(3.5rem, 9vw, 4.5rem)',
+            height: 'clamp(5.25rem, 13.5vh, 6.75rem)', // 2:3 ratio
+            fontSize: 'clamp(1.6rem, 4.5vw, 2.4rem)'
         },
     };
 
@@ -102,7 +102,15 @@ const SkyjoCard = memo(function SkyjoCard({
                         border: '1px solid rgba(255, 255, 255, 0.15)',
                     }}
                 >
-                    <span className="drop-shadow-md">
+                    {/* Glossy effect overlay */}
+                    <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 40%, transparent 60%)',
+                        }}
+                    />
+                    <span className="drop-shadow-md relative z-10">
                         {card.value < 0 ? card.value : card.value}
                     </span>
                 </div>

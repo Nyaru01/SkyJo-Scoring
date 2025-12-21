@@ -7,6 +7,8 @@ import { Input } from './ui/Input';
 import { Toast } from './ui/Toast';
 import PlayerHand from './virtual/PlayerHand';
 import DrawDiscard from './virtual/DrawDiscard';
+import DrawDiscardPopup from './virtual/DrawDiscardPopup';
+import DrawDiscardTrigger from './virtual/DrawDiscardTrigger';
 import SkyjoCard from './virtual/SkyjoCard';
 import { useVirtualGameStore, selectAIMode, selectAIPlayers, selectIsCurrentPlayerAI, selectIsAIThinking } from '../store/virtualGameStore';
 import { useOnlineGameStore } from '../store/onlineGameStore';
@@ -103,6 +105,7 @@ export default function VirtualGame() {
     const [notification, setNotification] = useState(null);
     const [hasPlayedVictory, setHasPlayedVictory] = useState(false);
     const [showRulesModal, setShowRulesModal] = useState(false);
+    const [showDrawDiscardPopup, setShowDrawDiscardPopup] = useState(false);
 
     // AI Config State
     const [aiConfig, setAIConfig] = useState({
@@ -220,7 +223,7 @@ export default function VirtualGame() {
                 if (currentState &&
                     currentState.currentPlayerIndex !== undefined &&
                     useVirtualGameStore.getState().aiPlayers.includes(currentState.currentPlayerIndex) &&
-                    (currentState.turnPhase === 'REPLACE_OR_DISCARD' || currentState.turnPhase === 'MUST_REPLACE')) {
+                    (currentState.turnPhase === 'REPLACE_OR_DISCARD' || currentState.turnPhase === 'MUST_REPLACE' || currentState.turnPhase === 'MUST_REVEAL')) {
                     executeAITurn();
                 }
                 setAIThinking(false);
@@ -1176,21 +1179,40 @@ export default function VirtualGame() {
         );
     }
 
+    // Determine vignette color based on whose turn it is
+    const isPlayerTurn = !isInitialReveal && activeGameState.currentPlayerIndex === 0;
+    const isBotTurn = !isInitialReveal && activeGameState.currentPlayerIndex === 1;
+    const vignetteColor = isPlayerTurn
+        ? 'radial-gradient(ellipse at center, transparent 50%, rgba(34, 197, 94, 0.15) 100%)'
+        : isBotTurn
+            ? 'radial-gradient(ellipse at center, transparent 50%, rgba(239, 68, 68, 0.15) 100%)'
+            : 'none';
+
     return (
-        <div className="max-w-3xl mx-auto p-1 sm:p-2 space-y-1 sm:space-y-3 animate-in fade-in">
-            {/* Header - minimal, no duplicate player info */}
-            <div className="flex items-center justify-between">
+        <div
+            className="max-w-3xl mx-auto p-1 sm:p-2 space-y-1 sm:space-y-3 animate-in fade-in relative"
+            style={{
+                // Vignette effect around edges based on turn
+                boxShadow: isPlayerTurn
+                    ? 'inset 0 0 80px rgba(34, 197, 94, 0.2)'
+                    : isBotTurn
+                        ? 'inset 0 0 80px rgba(239, 68, 68, 0.2)'
+                        : 'none',
+            }}
+        >
+            {/* Header - ultra-thin single line */}
+            <div className="flex items-center justify-between px-2 py-1 mb-1">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleBackToMenu}
+                    className="h-6 px-2 text-xs"
                 >
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Quitter
+                    ← Quitter
                 </Button>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                    Manche {activeRoundNumber}
-                </div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    MANCHE {activeRoundNumber}
+                </span>
             </div>
 
             {/* Bot/Opponent (Player 2) at TOP for thumb zone optimization */}
@@ -1222,14 +1244,57 @@ export default function VirtualGame() {
                 </div>
             )}
 
-            {/* Action hint - positioned just above the draw pile with generous padding */}
+            {/* Compact Draw/Discard Trigger Button - ABOVE the banner */}
+            {!isInitialReveal && (
+                <div
+                    className="flex justify-center px-4"
+                    style={{ marginTop: '24px', marginBottom: '16px' }}
+                >
+                    <div style={{ width: '100%', maxWidth: '340px' }}>
+                        <DrawDiscardTrigger
+                            onClick={() => setShowDrawDiscardPopup(true)} // Default open
+                            onDrawAction={() => {
+                                // Direct draw action
+                                if (activeGameState.turnPhase === 'DRAW') {
+                                    drawFromDrawPile();
+                                    setShowDrawDiscardPopup(true);
+                                }
+                            }}
+                            onDiscardAction={() => {
+                                // Direct discard take action
+                                if (activeGameState.turnPhase === 'DRAW') {
+                                    // Just open popup for discard take confirmation/action
+                                    // Or we could auto-take: takeFromDiscard();
+                                    // But taking from discard commits you. The popup shows the discard card clearly.
+                                    // Let's auto-take to be fluid as requested "montre la carte" -> implies we took it
+                                    takeFromDiscard();
+                                    setShowDrawDiscardPopup(true);
+                                }
+                            }}
+                            discardTop={discardTop}
+                            drawnCard={activeGameState.drawnCard}
+                            drawPileCount={activeGameState.drawPile.length}
+                            discardPileCount={activeGameState.discardPile.length}
+                            canInteract={
+                                !isInitialReveal &&
+                                activeGameState.currentPlayerIndex === 0 &&
+                                (activeGameState.turnPhase === 'DRAW' || (!!activeGameState.drawnCard))
+                            }
+                            turnPhase={activeGameState.turnPhase}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Instruction Banner - BELOW the PIOCHER button */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeGameState.turnPhase + activeGameState.phase}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="text-center py-3 my-2"
+                    className="text-center"
+                    style={{ marginBottom: '30px' }}
                 >
                     <span
                         className={cn(
@@ -1238,10 +1303,10 @@ export default function VirtualGame() {
                                 ? "bg-purple-600 text-white"
                                 : activeGameState.turnPhase === 'DRAW'
                                     ? "bg-blue-600 text-white"
-                                    : "bg-amber-500 text-white"
+                                    : "bg-violet-600 text-white"
                         )}
                         style={{
-                            minWidth: '280px',
+                            maxWidth: '85%',
                             boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
                         }}
                     >
@@ -1266,81 +1331,6 @@ export default function VirtualGame() {
                     </span>
                 </motion.div>
             </AnimatePresence>
-
-            {/* Draw/Discard Area (between players) */}
-            <Card className={cn(
-                "glass-premium dark:glass-dark transition-all duration-500",
-                !isInitialReveal && "ring-2 ring-emerald-400/50"
-            )}>
-                {!isInitialReveal ? (
-                    <DrawDiscard
-                        drawPileCount={activeGameState.drawPile.length}
-                        discardTop={discardTop}
-                        drawnCard={activeGameState.drawnCard}
-                        canDraw={activeGameState.turnPhase === 'DRAW'}
-                        canTakeDiscard={
-                            activeGameState.turnPhase === 'DRAW' &&
-                            activeGameState.discardPile.length > 0
-                        }
-                        canDiscardDrawn={activeGameState.turnPhase === 'REPLACE_OR_DISCARD'}
-                        lastDiscardedCard={isOnlineMode ? lastAction?.card : null}
-                        onDrawClick={() => {
-                            if (isOnlineMode) {
-                                emitGameAction('draw_pile');
-                            } else {
-                                drawFromDrawPile();
-                            }
-                        }}
-                        onDiscardClick={() => {
-                            if (isOnlineMode) {
-                                emitGameAction('draw_discard');
-                            } else {
-                                takeFromDiscard();
-                            }
-                        }}
-                        onDiscardDrawnCard={() => {
-                            if (isOnlineMode) {
-                                emitGameAction('discard_drawn');
-                            } else {
-                                discardDrawnCard();
-                            }
-                        }}
-                    />
-                ) : (
-                    <div className="flex items-center justify-center gap-8 py-4">
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="relative w-14 h-20 rounded-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-2 border-slate-600 flex items-center justify-center shadow-xl opacity-50">
-                                {/* Card stack icon */}
-                                <svg className="w-8 h-10" viewBox="0 0 24 24" fill="none">
-                                    <rect x="3" y="1" width="12" height="16" rx="2" fill="#475569" stroke="#64748b" strokeWidth="0.8" />
-                                    <rect x="6" y="4" width="12" height="16" rx="2" fill="#334155" stroke="#475569" strokeWidth="0.8" />
-                                    <rect x="9" y="7" width="12" height="16" rx="2" fill="url(#revealPileGrad)" stroke="#34d399" strokeWidth="0.8" />
-                                    <defs>
-                                        <linearGradient id="revealPileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#34d399" />
-                                            <stop offset="100%" stopColor="#0d9488" />
-                                        </linearGradient>
-                                    </defs>
-                                </svg>
-                            </div>
-                            <span className="text-xs font-bold text-slate-300">
-                                Pioche <span className="text-emerald-400">({activeGameState.drawPile.length})</span>
-                            </span>
-                        </div>
-                        <div className="text-center text-slate-400 text-sm">
-                            Révélation des cartes...
-                        </div>
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="w-14 h-20 rounded-xl border-2 border-dashed border-slate-400/30 flex items-center justify-center opacity-50">
-                                <span className="text-slate-400/50 text-xs">Vide</span>
-                            </div>
-                            <span className="text-xs font-medium text-slate-400">
-                                Défausse
-                            </span>
-                        </div>
-                    </div>
-                )}
-            </Card>
 
             {/* Human Player (Player 1) at BOTTOM for thumb zone optimization */}
             {activeGameState.players[0] && (
@@ -1438,7 +1428,57 @@ export default function VirtualGame() {
                     </div>
                 </div>
             )}
+
+            {/* Draw/Discard Popup Modal */}
+            <DrawDiscardPopup
+                isOpen={showDrawDiscardPopup}
+                onClose={() => {
+                    // Check if we need to undo "Take from Discard" action
+                    // Logic: If we are in 'MUST_REPLACE' phase (meaning we took from discard)
+                    // and we close the popup without confirming placement (which would change phase)
+                    // then we should UN-DO the take action (put card back).
+                    if (activeGameState.turnPhase === 'MUST_REPLACE' && !isOnlineMode) {
+                        useVirtualGameStore.getState().undoTakeFromDiscard();
+                    }
+                    setShowDrawDiscardPopup(false);
+                }}
+                drawPileCount={activeGameState.drawPile.length}
+                discardTop={discardTop}
+                drawnCard={activeGameState.drawnCard}
+                canDraw={activeGameState.turnPhase === 'DRAW'}
+                canTakeDiscard={
+                    activeGameState.turnPhase === 'DRAW' &&
+                    activeGameState.discardPile.length > 0
+                }
+                canDiscardDrawn={activeGameState.turnPhase === 'REPLACE_OR_DISCARD'}
+                onDrawClick={() => {
+                    if (isOnlineMode) {
+                        emitGameAction('draw_pile');
+                    } else {
+                        drawFromDrawPile();
+                    }
+                }}
+                onDiscardClick={() => {
+                    if (isOnlineMode) {
+                        emitGameAction('draw_discard');
+                    } else {
+                        takeFromDiscard();
+                    }
+                }}
+                onConfirmPlacement={() => {
+                    // Just close popup - we are in 'MUST_REPLACE' or 'REPLACE_OR_DISCARD'
+                    // and user wants to place on grid.
+                    setShowDrawDiscardPopup(false);
+                }}
+                onDiscardDrawnCard={() => {
+                    if (isOnlineMode) {
+                        emitGameAction('discard_drawn');
+                    } else {
+                        useVirtualGameStore.getState().discardDrawnCard();
+                    }
+                    setShowDrawDiscardPopup(false);
+                }}
+            />
         </div>
     );
 }
-

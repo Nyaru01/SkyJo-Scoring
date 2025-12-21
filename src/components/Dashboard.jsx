@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Settings, Trophy, Sparkles, History, Undo2, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, selectPlayers, selectRounds, selectThreshold, selectGameStatus } from '../store/gameStore';
+import { useVirtualGameStore } from '../store/virtualGameStore';
+import { useOnlineGameStore } from '../store/onlineGameStore';
 import { Button } from './ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import ScoreInput from './ScoreInput';
@@ -262,16 +264,25 @@ export default function Dashboard() {
         }
     };
 
+    const virtualGameState = useVirtualGameStore(state => state.gameState);
+    const onlineGameStarted = useOnlineGameStore(state => state.gameStarted);
+
+    // Determines if we are in an active virtual game (local or online)
+    const isVirtualGameActive = activeTab === 'virtual' && (!!virtualGameState || onlineGameStarted);
+
     return (
         <div className="min-h-screen">
-            <div className="max-w-3xl mx-auto p-4 pb-24">
+            <div className={`max-w-3xl mx-auto p-4 ${isVirtualGameActive ? 'pb-2' : 'pb-24'}`}>
                 <AnimatePresence mode="wait">
                     {renderContent()}
                 </AnimatePresence>
                 {gameStatus === 'FINISHED' && <GameOver />}
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            {/* Hide bottom nav ONLY during active virtual game for full screen experience */}
+            {!isVirtualGameActive && (
+                <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            )}
         </div>
     );
 }
