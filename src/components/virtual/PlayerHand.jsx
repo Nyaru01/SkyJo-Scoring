@@ -11,6 +11,7 @@ const PlayerHand = memo(function PlayerHand({
     player,
     isCurrentPlayer = false,
     isLocalPlayer = false,
+    isOpponent = false,
     selectedCardIndex,
     onCardClick,
     canInteract = false,
@@ -36,39 +37,84 @@ const PlayerHand = memo(function PlayerHand({
         visible: { opacity: 1, y: 0 },
     };
 
+    // Calculate score for display
+    const currentScore = player.hand
+        .filter((c) => c?.isRevealed)
+        .reduce((sum, c) => sum + c.value, 0);
+
     return (
         <div
             className={cn(
-                "relative p-3 rounded-2xl transition-all duration-300",
-                isCurrentPlayer
-                    ? "bg-gradient-to-br from-emerald-200/90 to-teal-200/90 dark:from-emerald-800/60 dark:to-teal-800/60 ring-4 ring-emerald-400 shadow-2xl shadow-emerald-500/50 animate-pulse-slow"
-                    : "bg-slate-100/50 dark:bg-slate-800/30",
+                "relative rounded-2xl transition-all duration-300",
+                isCurrentPlayer && !isOpponent
+                    ? "ring-4 ring-emerald-400 shadow-2xl shadow-emerald-500/50 animate-pulse-slow"
+                    : isCurrentPlayer && isOpponent
+                        ? "ring-4 ring-blue-400 shadow-2xl shadow-blue-500/50 animate-pulse-slow"
+                        : "",
                 isLocalPlayer && "border-2 border-amber-400"
             )}
-            style={isCurrentPlayer ? {
-                boxShadow: '0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3), 0 0 90px rgba(52, 211, 153, 0.1)'
-            } : undefined}
+            style={{
+                // 85% black overlay behind cards + 20px blur for better contrast
+                backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                padding: '16px 12px 12px 12px',
+                ...(isCurrentPlayer ? {
+                    boxShadow: isOpponent
+                        ? '0 0 30px rgba(96, 165, 250, 0.6), 0 0 60px rgba(96, 165, 250, 0.3), 0 0 90px rgba(96, 165, 250, 0.1)'
+                        : '0 0 30px rgba(52, 211, 153, 0.6), 0 0 60px rgba(52, 211, 153, 0.3), 0 0 90px rgba(52, 211, 153, 0.1)'
+                } : {})
+            }}
         >
-            {/* Player name badge */}
+            {/* Player label with score - COMPACT design */}
             {showName && (
                 <div
                     className={cn(
-                        "absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-sm font-bold shadow-md whitespace-nowrap",
-                        isCurrentPlayer
+                        "absolute left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full font-bold shadow-md whitespace-nowrap uppercase tracking-wide flex items-center gap-1.5",
+                        isCurrentPlayer && !isOpponent
                             ? "bg-emerald-500 text-white"
-                            : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+                            : isCurrentPlayer && isOpponent
+                                ? "bg-blue-500 text-white"
+                                : isOpponent
+                                    ? "bg-slate-600 text-slate-200"
+                                    : "bg-emerald-600 text-white"
                     )}
+                    style={{
+                        fontSize: '11px',
+                        zIndex: 50,
+                        top: '-12px',
+                    }}
                 >
-                    {player.emoji} {player.name}
+                    {isOpponent ? (
+                        <span>🤖 BOT</span>
+                    ) : (
+                        <span>VOUS</span>
+                    )}
+                    {/* Score displayed compactly next to label */}
+                    <span
+                        className="font-black"
+                        style={{
+                            fontSize: '13pt',
+                            fontFamily: "'Outfit', system-ui, sans-serif",
+                        }}
+                    >
+                        {currentScore}
+                    </span>
                     {isCurrentPlayer && (
-                        <span className="ml-2 animate-pulse">🎯</span>
+                        <span className="animate-pulse text-xs">🎯</span>
                     )}
                 </div>
             )}
 
-            {/* Card grid: 4 columns x 3 rows */}
+            {/* Card grid: strict 4 columns x 3 rows with 12px gap */}
             <motion.div
-                className="grid grid-cols-4 gap-1 mt-2"
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: '12px',
+                    marginTop: '10px', // 10px margin from badge area
+                    justifyItems: 'center',
+                }}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -82,6 +128,7 @@ const PlayerHand = memo(function PlayerHand({
                             <motion.div
                                 key={`${row}-${col}`}
                                 variants={cardVariants}
+                                style={{ position: 'relative', zIndex: 1 }} // Lower z-index than badge
                             >
                                 <SkyjoCard
                                     card={card}
@@ -96,18 +143,6 @@ const PlayerHand = memo(function PlayerHand({
                     })
                 )}
             </motion.div>
-
-            {/* Score indicator */}
-            <div className="mt-2 text-center">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                    Score visible:{' '}
-                    <span className="font-bold text-slate-700 dark:text-slate-200">
-                        {player.hand
-                            .filter((c) => c?.isRevealed)
-                            .reduce((sum, c) => sum + c.value, 0)}
-                    </span>
-                </span>
-            </div>
         </div>
     );
 });

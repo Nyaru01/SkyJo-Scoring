@@ -6,6 +6,9 @@ import { CARD_COLORS } from '../../lib/skyjoEngine';
 /**
  * Skyjo Card Component
  * Displays a card with flip animation, value, and color coding
+ * 
+ * Card sizes now scale dynamically with viewport height so the game
+ * fits on mobile screens without scrolling.
  */
 const SkyjoCard = memo(function SkyjoCard({
     card,
@@ -16,18 +19,45 @@ const SkyjoCard = memo(function SkyjoCard({
     onClick,
     className,
 }) {
+    // Dynamic sizing based on viewport - STANDARD 3:4 RATIO (width:height)
+    // Cards should be wider, not elongated like dominos
+    const sizeStyles = {
+        xs: {
+            width: 'clamp(1.5rem, 5vw, 2.25rem)',      // Wider
+            height: 'clamp(2rem, 6.5vh, 3rem)',        // 3:4 ratio
+            fontSize: 'clamp(0.6rem, 1.8vw, 0.9rem)'
+        },
+        sm: {
+            width: 'clamp(2.25rem, 6.5vw, 3.25rem)',   // Wider
+            height: 'clamp(3rem, 8.5vh, 4.33rem)',     // 3:4 ratio
+            fontSize: 'clamp(0.9rem, 2.4vw, 1.2rem)'
+        },
+        md: {
+            width: 'clamp(3rem, 8vw, 4rem)',           // Wider: ~48-64px
+            height: 'clamp(4rem, 10.5vh, 5.33rem)',    // 3:4 ratio: ~64-85px
+            fontSize: 'clamp(1.1rem, 3vw, 1.8rem)'
+        },
+        lg: {
+            width: 'clamp(3.5rem, 9vw, 4.75rem)',      // Wider
+            height: 'clamp(4.67rem, 12vh, 6.33rem)',   // 3:4 ratio
+            fontSize: 'clamp(1.3rem, 3.6vw, 2.2rem)'
+        },
+    };
+
+    const currentSize = sizeStyles[size] || sizeStyles.md;
+
     if (card === null) {
         // Empty slot (column was removed)
         return (
             <div
                 className={cn(
                     "rounded-lg border-2 border-dashed border-slate-300/50 dark:border-slate-600/50",
-                    size === 'xs' && "w-7 h-10",
-                    size === 'sm' && "w-10 h-14",
-                    size === 'md' && "w-14 h-20",
-                    size === 'lg' && "w-16 h-24",
                     className
                 )}
+                style={{
+                    width: currentSize.width,
+                    height: currentSize.height,
+                }}
             />
         );
     }
@@ -35,22 +65,20 @@ const SkyjoCard = memo(function SkyjoCard({
     const colors = CARD_COLORS[card.color] || CARD_COLORS.green;
     const isRevealed = card.isRevealed;
 
-    const sizeClasses = {
-        xs: "w-7 h-10 text-sm",
-        sm: "w-10 h-14 text-lg",
-        md: "w-14 h-20 text-2xl",
-        lg: "w-16 h-24 text-3xl",
-    };
-
     return (
         <motion.div
             className={cn(
-                "perspective-1000 cursor-pointer",
-                sizeClasses[size],
+                "perspective-1000",
+                isClickable ? "cursor-pointer" : "cursor-default",
                 className
             )}
+            style={{
+                width: currentSize.width,
+                height: currentSize.height,
+                fontSize: currentSize.fontSize,
+            }}
             onClick={isClickable ? onClick : undefined}
-            whileHover={isClickable ? { scale: 1.05 } : undefined}
+            whileHover={isClickable ? { scale: 1.08, y: -4 } : undefined}
             whileTap={isClickable ? { scale: 0.95 } : undefined}
         >
             <motion.div
@@ -61,14 +89,18 @@ const SkyjoCard = memo(function SkyjoCard({
                 {/* Front face (value visible) */}
                 <div
                     className={cn(
-                        "absolute inset-0 backface-hidden rounded-xl flex items-center justify-center font-black shadow-lg border-2 border-white/30",
+                        "absolute inset-0 backface-hidden flex items-center justify-center font-black",
                         colors.bg,
                         colors.text,
                         isSelected && "ring-4 ring-amber-400 ring-offset-2",
-                        isHighlighted && "ring-4 ring-emerald-400 animate-pulse",
-                        isClickable && "hover:shadow-xl",
-                        colors.glow && isRevealed && `shadow-lg ${colors.glow}`
+                        isClickable && "hover:shadow-2xl",
+                        colors.glow && isRevealed && `${colors.glow}`
                     )}
+                    style={{
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                    }}
                 >
                     <span className="drop-shadow-md">
                         {card.value < 0 ? card.value : card.value}
@@ -78,16 +110,39 @@ const SkyjoCard = memo(function SkyjoCard({
                 {/* Back face (hidden) */}
                 <div
                     className={cn(
-                        "absolute inset-0 backface-hidden rounded-xl flex items-center justify-center rotate-y-180",
+                        "absolute inset-0 backface-hidden flex items-center justify-center rotate-y-180",
                         "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900",
-                        "border-2 border-slate-600",
                         isSelected && "ring-4 ring-amber-400 ring-offset-2",
-                        isHighlighted && "ring-4 ring-emerald-400 animate-pulse"
                     )}
+                    style={{
+                        borderRadius: '12px',
+                        boxShadow: isHighlighted
+                            ? '0 0 20px rgba(52, 211, 153, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4)'
+                            : '0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3)',
+                        border: isHighlighted
+                            ? '2px solid rgba(52, 211, 153, 0.8)'
+                            : '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
                 >
-                    {/* Card back pattern */}
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-inner">
-                        <span className="text-white text-xs font-bold">?</span>
+                    {/* Card back pattern - abstract geometric design */}
+                    <div
+                        className="flex items-center justify-center"
+                        style={{
+                            width: '60%',
+                            height: '60%',
+                        }}
+                    >
+                        {/* Abstract diamond/geometric pattern */}
+                        <svg className="w-full h-full" viewBox="0 0 24 24" fill="none">
+                            <rect x="6" y="6" width="12" height="12" rx="2" fill="url(#cardGrad)" transform="rotate(45 12 12)" />
+                            <circle cx="12" cy="12" r="3" fill="rgba(255,255,255,0.3)" />
+                            <defs>
+                                <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#34d399" />
+                                    <stop offset="100%" stopColor="#0d9488" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
                     </div>
                 </div>
             </motion.div>

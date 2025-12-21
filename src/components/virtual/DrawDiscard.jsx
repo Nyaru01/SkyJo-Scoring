@@ -36,9 +36,9 @@ const DrawDiscard = memo(function DrawDiscard({
     }, [lastDiscardedCard]);
 
     return (
-        <div className="flex items-center justify-center gap-8 py-4">
-            {/* Draw Pile */}
-            <div className="flex flex-col items-center gap-2">
+        <div className="flex items-center justify-center gap-2 sm:gap-6 py-1.5 sm:py-3">
+            {/* Draw Pile - 3D Stacked Effect */}
+            <div className="flex flex-col items-center gap-1">
                 <motion.button
                     onClick={onDrawClick}
                     disabled={!canDraw}
@@ -47,28 +47,64 @@ const DrawDiscard = memo(function DrawDiscard({
                         canDraw && "cursor-pointer",
                         !canDraw && "cursor-not-allowed opacity-60"
                     )}
-                    whileHover={canDraw ? { scale: 1.05 } : undefined}
+                    whileHover={canDraw ? { scale: 1.08, y: -4 } : undefined}
                     whileTap={canDraw ? { scale: 0.95 } : undefined}
                 >
-                    {/* Stacked cards effect */}
-                    <div className="absolute top-1 left-1 w-14 h-20 rounded-xl bg-slate-700 opacity-40" />
-                    <div className="absolute top-0.5 left-0.5 w-14 h-20 rounded-xl bg-slate-600 opacity-60" />
+                    {/* 3D Stacked cards effect - multiple layers */}
+                    <div
+                        className="absolute rounded-xl bg-slate-800"
+                        style={{
+                            width: 'clamp(2.3rem, 6.9vw, 4rem)',
+                            height: 'clamp(3.16rem, 9.2vh, 5.75rem)',
+                            top: '6px',
+                            left: '6px',
+                            borderRadius: '12px',
+                            opacity: 0.3,
+                        }}
+                    />
+                    <div
+                        className="absolute rounded-xl bg-slate-700"
+                        style={{
+                            width: 'clamp(2.3rem, 6.9vw, 4rem)',
+                            height: 'clamp(3.16rem, 9.2vh, 5.75rem)',
+                            top: '3px',
+                            left: '3px',
+                            borderRadius: '12px',
+                            opacity: 0.5,
+                        }}
+                    />
 
                     {/* Top card (back) */}
                     <div
-                        className={cn(
-                            "relative w-14 h-20 rounded-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-2 border-slate-600 flex items-center justify-center shadow-xl",
-                            canDraw && "ring-2 ring-emerald-400 animate-pulse"
-                        )}
+                        className="relative flex items-center justify-center"
+                        style={{
+                            width: 'clamp(2.3rem, 6.9vw, 4rem)',
+                            height: 'clamp(3.16rem, 9.2vh, 5.75rem)',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #374151 0%, #1e293b 50%, #0f172a 100%)',
+                            boxShadow: canDraw
+                                ? '0 0 20px rgba(52, 211, 153, 0.5), 0 4px 16px rgba(0, 0, 0, 0.4)'
+                                : '0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3)',
+                            border: canDraw ? '2px solid rgba(52, 211, 153, 0.7)' : '1px solid rgba(255, 255, 255, 0.1)',
+                        }}
                     >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">S</span>
-                        </div>
+                        {/* Abstract card stack icon - displayed directly without wrapper */}
+                        <svg className="w-2/3 h-2/3" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="1" width="12" height="16" rx="2" fill="#475569" stroke="#64748b" strokeWidth="0.8" />
+                            <rect x="6" y="4" width="12" height="16" rx="2" fill="#334155" stroke="#475569" strokeWidth="0.8" />
+                            <rect x="9" y="7" width="12" height="16" rx="2" fill="url(#pileGrad2)" stroke="#34d399" strokeWidth="0.8" />
+                            <defs>
+                                <linearGradient id="pileGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#34d399" />
+                                    <stop offset="100%" stopColor="#0d9488" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
                     </div>
                 </motion.button>
 
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                    Pioche ({drawPileCount})
+                <span className="text-xs font-bold text-slate-300" style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}>
+                    Pioche <span className="text-emerald-400">({drawPileCount})</span>
                 </span>
             </div>
 
@@ -139,25 +175,49 @@ const DrawDiscard = memo(function DrawDiscard({
                             </motion.div>
                         </div>
                     ) : (
-                        <div className={cn(
-                            "w-14 h-20 rounded-xl border-2 border-dashed flex items-center justify-center",
-                            canDiscardDrawn ? "border-orange-400 bg-orange-50/50 dark:bg-orange-900/20" : "border-slate-400/50"
-                        )}>
+                        <div
+                            className="flex flex-col items-center justify-center"
+                            style={{
+                                width: 'clamp(2.3rem, 6.9vw, 4rem)',
+                                height: 'clamp(3.16rem, 9.2vh, 5.75rem)',
+                                borderRadius: '12px',
+                                background: canDiscardDrawn
+                                    ? 'rgba(251, 146, 60, 0.15)'
+                                    : 'rgba(71, 85, 105, 0.2)',
+                                backdropFilter: 'blur(8px)',
+                                border: canDiscardDrawn
+                                    ? '2px dashed rgba(251, 146, 60, 0.6)'
+                                    : '2px dashed rgba(100, 116, 139, 0.4)',
+                                boxShadow: canDiscardDrawn
+                                    ? '0 0 15px rgba(251, 146, 60, 0.3), inset 0 0 20px rgba(251, 146, 60, 0.1)'
+                                    : 'inset 0 0 10px rgba(0, 0, 0, 0.2)',
+                            }}
+                        >
+                            {/* Deposit icon */}
+                            <svg
+                                className={cn(
+                                    "w-4 h-4 mb-0.5",
+                                    canDiscardDrawn ? "text-orange-400" : "text-slate-500"
+                                )}
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                            >
+                                <path d="M12 5v14M5 12l7 7 7-7" />
+                            </svg>
                             <span className={cn(
-                                "text-xs",
-                                canDiscardDrawn ? "text-orange-500 font-medium" : "text-slate-400"
+                                "text-[7px] font-medium",
+                                canDiscardDrawn ? "text-orange-400" : "text-slate-500"
                             )}>
-                                {canDiscardDrawn ? "Défausser" : "Vide"}
+                                {canDiscardDrawn ? "Déposer" : "Vide"}
                             </span>
                         </div>
                     )}
                 </motion.button>
 
-                <span className={cn(
-                    "text-xs font-medium",
-                    canDiscardDrawn ? "text-orange-500" : "text-slate-600 dark:text-slate-400"
-                )}>
-                    {canDiscardDrawn ? "👆 Cliquez pour défausser" : "Défausse"}
+                <span className="text-xs font-bold text-slate-300" style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}>
+                    Défausse
                 </span>
             </div>
         </div>
@@ -165,4 +225,3 @@ const DrawDiscard = memo(function DrawDiscard({
 });
 
 export default DrawDiscard;
-

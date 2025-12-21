@@ -38,6 +38,11 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  /* iOS safe area insets for notch and home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   /* Skyjo Image Background */
   background: url('/bg-skyjo.png');
   background-size: cover;
@@ -48,12 +53,14 @@ body {
   background-blend-mode: overlay;
 }
 
-/* Overlay sombre sur le background */
+/* Overlay sombre sur le background avec blur */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   pointer-events: none;
   z-index: -1;
 }
@@ -100,6 +107,54 @@ button {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+/* =============================================== */
+/* DESIGN SYSTEM - Semantic Colors & Typography   */
+/* =============================================== */
+
+:root {
+  /* Semantic color variables */
+  --color-player-accent: #2ECC71;
+  --color-opponent-accent: #6B7280;
+  --color-background: #1A1B2E;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #94A3B8;
+}
+
+/* Typography hierarchy */
+.text-h1 {
+  font-size: 18pt;
+  font-weight: 700;
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.text-body {
+  font-size: 14pt;
+  font-weight: 400;
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.text-small {
+  font-size: 12pt;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* Score flash animation for feedback */
+@keyframes score-flash {
+
+  0%,
+  100% {
+    background-color: transparent;
+  }
+
+  50% {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.animate-score-flash {
+  animation: score-flash 0.4s ease-out;
 }
 
 /* =============================================== */

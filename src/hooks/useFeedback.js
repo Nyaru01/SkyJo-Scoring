@@ -1,50 +1,218 @@
 /**
  * Hook for audio and haptic feedback
  * Provides sound effects and vibration for game events
+ * 
+ * MOBILE FIX: Audio on iOS Safari and Android Chrome requires user interaction
+ * before any audio can play. This module handles unlocking audio on first touch.
  */
 
 import { useGameStore } from '../store/gameStore';
+import { useEffect, useCallback } from 'react';
 
-// Simple beep using Web Audio API
-const playBeep = (frequency = 440, duration = 100, volume = 0.3) => {
+// ============================================
+// AUDIO CONTEXT MANAGEMENT (Mobile Fix)
+// ============================================
+
+// Shared audio context - created once, unlocked on first user interaction
+let sharedAudioContext = null;
+let audioUnlocked = false;
+let audioUnlockListenerAdded = false;
+
+// Pre-loaded audio buffers for faster playback
+const audioBuffers = {};
+
+/**
+ * Get or create the shared AudioContext
+ */
+const getAudioContext = () => {
+    if (!sharedAudioContext) {
+        try {
+            sharedAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('WebAudio API not available');
+            return null;
+        }
+    }
+    return sharedAudioContext;
+};
+
+/**
+ * Unlock audio context on first user interaction (required for mobile)
+ * iOS Safari and Android Chrome block AudioContext until user interacts
+ */
+const unlockAudio = async () => {
+    if (audioUnlocked) return;
+
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    // Resume audio context (required on iOS Safari)
+    if (ctx.state === 'suspended') {
+        try {
+            await ctx.resume();
+        } catch (e) {
+            console.log('Failed to resume audio context:', e);
+        }
+    }
+
+    // Play a silent sound to fully unlock audio on iOS
     try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+    } catch (e) {
+        // Silent fail - audio might still work
+    }
+
+    audioUnlocked = true;
+    console.log('🔊 Audio unlocked for mobile');
+
+    // Pre-load audio files after unlock
+    preloadAudioFiles();
+};
+
+/**
+ * Pre-load audio files into memory for faster playback
+ */
+const preloadAudioFiles = async () => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const filesToPreload = [
+        '/Sounds/victory.mp3',
+        '/Sounds/Start.mp3'
+    ];
+
+    for (const path of filesToPreload) {
+        try {
+            const response = await fetch(path);
+            if (response.ok) {
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+                audioBuffers[path] = audioBuffer;
+                console.log(`✓ Preloaded: ${path}`);
+            }
+        } catch (e) {
+            console.log(`Could not preload ${path}:`, e.message);
+        }
+    }
+};
+
+/**
+ * Set up audio unlock listener (call once on app init)
+ */
+const setupAudioUnlockListener = () => {
+    if (audioUnlockListenerAdded) return;
+    audioUnlockListenerAdded = true;
+
+    const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+
+    const handleUnlock = () => {
+        unlockAudio();
+        // Remove listeners after first interaction
+        unlockEvents.forEach(event => {
+            document.removeEventListener(event, handleUnlock, true);
+        });
+    };
+
+    unlockEvents.forEach(event => {
+        document.addEventListener(event, handleUnlock, { capture: true, passive: true });
+    });
+};
+
+// Initialize audio unlock listener immediately
+setupAudioUnlockListener();
+
+// ============================================
+// SOUND PLAYBACK FUNCTIONS
+// ============================================
+
+/**
+ * Play a beep sound using Web Audio API oscillator
+ */
+const playBeep = (frequency = 440, duration = 100, volume = 0.3) => {
+    const ctx = getAudioContext();
+    if (!ctx || ctx.state !== 'running') return;
+
+    try {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
 
         oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        gainNode.connect(ctx.destination);
 
         oscillator.frequency.value = frequency;
         oscillator.type = 'sine';
 
-        gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+        gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration / 1000);
 
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + duration / 1000);
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + duration / 1000);
     } catch (e) {
-        console.log('Audio not available');
+        // Silent fail
     }
 };
 
-// Play audio file from public folder
-const playAudioFile = (path, volume = 0.5) => {
+/**
+ * Play a pre-loaded audio file using Web Audio API (better for mobile)
+ */
+const playAudioBuffer = (path, volume = 0.5) => {
+    const ctx = getAudioContext();
+    if (!ctx || ctx.state !== 'running') return;
+
+    const buffer = audioBuffers[path];
+    if (!buffer) {
+        // Fallback to HTML5 Audio if not preloaded
+        playAudioFileFallback(path, volume);
+        return;
+    }
+
+    try {
+        const source = ctx.createBufferSource();
+        const gainNode = ctx.createGain();
+
+        source.buffer = buffer;
+        gainNode.gain.value = volume;
+
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        source.start(0);
+    } catch (e) {
+        console.log('Buffer playback failed:', e);
+    }
+};
+
+/**
+ * Fallback: Play audio file using HTML5 Audio
+ */
+const playAudioFileFallback = (path, volume = 0.5) => {
     try {
         const audio = new Audio(path);
         audio.volume = volume;
-        audio.play().catch(e => console.log('Audio playback failed:', e));
+        audio.play().catch(() => {
+            // Silent fail - user might not have interacted yet
+        });
     } catch (e) {
-        console.log('Audio file not available');
+        // Silent fail
     }
 };
 
-// Vibration feedback (mobile only)
+/**
+ * Vibration feedback (mobile only)
+ */
 const vibrate = (pattern = 50) => {
     if (navigator.vibrate) {
         navigator.vibrate(pattern);
     }
 };
+
+// ============================================
+// REACT HOOK
+// ============================================
 
 /**
  * Custom hook for feedback effects
@@ -53,49 +221,54 @@ const vibrate = (pattern = 50) => {
 export const useFeedback = () => {
     const soundEnabled = useGameStore(state => state.soundEnabled);
 
+    // Ensure audio unlock listener is set up
+    useEffect(() => {
+        setupAudioUnlockListener();
+    }, []);
+
     // Success sound - higher pitch, pleasant
-    const playSuccess = () => {
+    const playSuccess = useCallback(() => {
         if (!soundEnabled) return;
         playBeep(660, 80, 0.2);
         setTimeout(() => playBeep(880, 100, 0.2), 80);
         vibrate(50);
-    };
+    }, [soundEnabled]);
 
     // Click sound - short tap
-    const playClick = () => {
+    const playClick = useCallback(() => {
         if (!soundEnabled) return;
         playBeep(440, 50, 0.15);
         vibrate(30);
-    };
+    }, [soundEnabled]);
 
     // Victory sound - custom audio file
-    const playVictory = () => {
+    const playVictory = useCallback(() => {
         if (!soundEnabled) return;
-        playAudioFile('/Sounds/victory.mp3', 0.6);
+        playAudioBuffer('/Sounds/victory.mp3', 0.6);
         vibrate([50, 50, 100]);
-    };
+    }, [soundEnabled]);
 
     // Start game sound - custom audio file
-    const playStart = () => {
+    const playStart = useCallback(() => {
         if (!soundEnabled) return;
-        playAudioFile('/Sounds/Start.mp3', 0.5);
+        playAudioBuffer('/Sounds/Start.mp3', 0.5);
         vibrate(50);
-    };
+    }, [soundEnabled]);
 
     // Error sound - lower pitch
-    const playError = () => {
+    const playError = useCallback(() => {
         if (!soundEnabled) return;
         playBeep(220, 150, 0.2);
         vibrate([100, 50, 100]);
-    };
+    }, [soundEnabled]);
 
     // Undo sound - descending
-    const playUndo = () => {
+    const playUndo = useCallback(() => {
         if (!soundEnabled) return;
         playBeep(440, 80, 0.15);
         setTimeout(() => playBeep(330, 80, 0.15), 80);
         vibrate(30);
-    };
+    }, [soundEnabled]);
 
     return {
         playSuccess,

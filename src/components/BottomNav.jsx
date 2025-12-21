@@ -1,20 +1,15 @@
-import { Home, Gamepad2, History, Archive, BarChart3, Volume2, VolumeX, Dices } from 'lucide-react';
+import { Home, Archive, BarChart3, Dices } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useGameStore } from '../store/gameStore';
 
 export default function BottomNav({ activeTab, onTabChange }) {
     const gameStatus = useGameStore(state => state.gameStatus);
 
-    const soundEnabled = useGameStore(state => state.soundEnabled);
-    const toggleSound = useGameStore(state => state.toggleSound);
-
     const tabs = [
         { id: 'home', label: 'Accueil', icon: Home, alwaysEnabled: true },
         { id: 'virtual', label: 'Jouer', icon: Dices, alwaysEnabled: true },
-        { id: 'game', label: 'Scores', icon: Gamepad2, alwaysEnabled: false },
-        { id: 'rounds', label: 'Manches', icon: History, alwaysEnabled: false },
         { id: 'pastGames', label: 'Parties', icon: Archive, alwaysEnabled: true },
-        { id: 'stats', label: 'Stats', icon: BarChart3, alwaysEnabled: true },
+        { id: 'stats', label: 'Profil', icon: BarChart3, alwaysEnabled: true },
     ];
 
     return (
@@ -63,29 +58,6 @@ export default function BottomNav({ activeTab, onTabChange }) {
                         </button>
                     );
                 })}
-
-                {/* Sound Toggle */}
-                <button
-                    onClick={toggleSound}
-                    aria-label={soundEnabled ? 'Couper le son' : 'Activer le son'}
-                    className={cn(
-                        "flex-1 flex flex-col items-center justify-center h-full space-y-0.5 transition-all duration-300 active:scale-95",
-                        soundEnabled
-                            ? "text-slate-400 dark:text-slate-500 hover:text-emerald-500 dark:hover:text-emerald-400"
-                            : "text-red-400 dark:text-red-500 hover:text-red-500 dark:hover:text-red-400"
-                    )}
-                >
-                    {soundEnabled ? (
-                        <Volume2 className="h-5 w-5 transition-all duration-300" strokeWidth={2} />
-                    ) : (
-                        <VolumeX className="h-5 w-5 transition-all duration-300" strokeWidth={2} />
-                    )}
-                    <span className="text-[9px] font-bold tracking-wide">
-                        {soundEnabled ? 'SON' : 'MUET'}
-                    </span>
-                </button>
-
-
             </div>
         </nav>
     );

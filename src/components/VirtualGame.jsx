@@ -1177,8 +1177,8 @@ export default function VirtualGame() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto p-2 space-y-3 animate-in fade-in">
-            {/* Header */}
+        <div className="max-w-3xl mx-auto p-1 sm:p-2 space-y-1 sm:space-y-3 animate-in fade-in">
+            {/* Header - minimal, no duplicate player info */}
             <div className="flex items-center justify-between">
                 <Button
                     variant="ghost"
@@ -1188,43 +1188,66 @@ export default function VirtualGame() {
                     <ArrowLeft className="h-4 w-4 mr-1" />
                     Quitter
                 </Button>
-                <div className="text-center">
-                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
-                        {currentPlayer.emoji} {currentPlayer.name}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                        {isInitialReveal
-                            ? 'Révélez 2 cartes'
-                            : activeGameState.turnPhase === 'DRAW'
-                                ? 'Piochez une carte'
-                                : 'Jouez votre carte'}
-                    </span>
-                </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">
                     Manche {activeRoundNumber}
                 </div>
             </div>
 
-            {/* Action hint */}
+            {/* Bot/Opponent (Player 2) at TOP for thumb zone optimization */}
+            {activeGameState.players[1] && (
+                <div className="relative rounded-2xl transition-all duration-500">
+                    <PlayerHand
+                        player={activeGameState.players[1]}
+                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === 1}
+                        isOpponent={true}
+                        selectedCardIndex={null}
+                        canInteract={
+                            isInitialReveal ||
+                            (activeGameState.currentPlayerIndex === 1 && (
+                                activeGameState.turnPhase === 'REPLACE_OR_DISCARD' ||
+                                activeGameState.turnPhase === 'MUST_REPLACE' ||
+                                activeGameState.turnPhase === 'MUST_REVEAL'
+                            ))
+                        }
+                        onCardClick={(index) => {
+                            if (isInitialReveal) {
+                                handleInitialReveal(1, index);
+                            } else {
+                                if (activeGameState.currentPlayerIndex !== 1) return;
+                                handleCardClick(index);
+                            }
+                        }}
+                        size="md"
+                    />
+                </div>
+            )}
+
+            {/* Action hint - positioned just above the draw pile with generous padding */}
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeGameState.turnPhase + activeGameState.phase}
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="text-center py-2"
+                    className="text-center py-3 my-2"
                 >
-                    <span className={cn(
-                        "inline-block px-4 py-2 rounded-full text-sm font-medium",
-                        isInitialReveal
-                            ? "bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300"
-                            : activeGameState.turnPhase === 'DRAW'
-                                ? "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                                : "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
-                    )}>
+                    <span
+                        className={cn(
+                            "inline-block px-6 py-3 rounded-2xl text-sm font-semibold shadow-lg",
+                            isInitialReveal
+                                ? "bg-purple-600 text-white"
+                                : activeGameState.turnPhase === 'DRAW'
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-amber-500 text-white"
+                        )}
+                        style={{
+                            minWidth: '280px',
+                            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
+                        }}
+                    >
                         {isInitialReveal && (
                             <>
-                                Touchez 2 cartes pour les révéler
+                                Retournez chacun 2 cartes
                                 {selectedForReveal.length > 0 && ` (${selectedForReveal.length}/2)`}
                             </>
                         )}
@@ -1243,36 +1266,6 @@ export default function VirtualGame() {
                     </span>
                 </motion.div>
             </AnimatePresence>
-
-            {/* Player 1 (always first player, on top) */}
-            {activeGameState.players[0] && (
-                <div className="relative rounded-2xl transition-all duration-500">
-                    <PlayerHand
-                        player={activeGameState.players[0]}
-                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === 0}
-                        selectedCardIndex={null}
-                        canInteract={
-                            // During initial reveal: player can interact with their own cards
-                            // After: only if it's their turn
-                            isInitialReveal ||
-                            (activeGameState.currentPlayerIndex === 0 && (
-                                activeGameState.turnPhase === 'REPLACE_OR_DISCARD' ||
-                                activeGameState.turnPhase === 'MUST_REPLACE' ||
-                                activeGameState.turnPhase === 'MUST_REVEAL'
-                            ))
-                        }
-                        onCardClick={(index) => {
-                            if (isInitialReveal) {
-                                handleInitialReveal(0, index);
-                            } else {
-                                if (activeGameState.currentPlayerIndex !== 0) return;
-                                handleCardClick(index);
-                            }
-                        }}
-                        size="md"
-                    />
-                </div>
-            )}
 
             {/* Draw/Discard Area (between players) */}
             <Card className={cn(
@@ -1317,12 +1310,21 @@ export default function VirtualGame() {
                     <div className="flex items-center justify-center gap-8 py-4">
                         <div className="flex flex-col items-center gap-2">
                             <div className="relative w-14 h-20 rounded-xl bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-2 border-slate-600 flex items-center justify-center shadow-xl opacity-50">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center">
-                                    <span className="text-white text-xs font-bold">S</span>
-                                </div>
+                                {/* Card stack icon */}
+                                <svg className="w-8 h-10" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="1" width="12" height="16" rx="2" fill="#475569" stroke="#64748b" strokeWidth="0.8" />
+                                    <rect x="6" y="4" width="12" height="16" rx="2" fill="#334155" stroke="#475569" strokeWidth="0.8" />
+                                    <rect x="9" y="7" width="12" height="16" rx="2" fill="url(#revealPileGrad)" stroke="#34d399" strokeWidth="0.8" />
+                                    <defs>
+                                        <linearGradient id="revealPileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor="#34d399" />
+                                            <stop offset="100%" stopColor="#0d9488" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
                             </div>
-                            <span className="text-xs font-medium text-slate-400">
-                                Pioche ({activeGameState.drawPile.length})
+                            <span className="text-xs font-bold text-slate-300">
+                                Pioche <span className="text-emerald-400">({activeGameState.drawPile.length})</span>
                             </span>
                         </div>
                         <div className="text-center text-slate-400 text-sm">
@@ -1340,16 +1342,17 @@ export default function VirtualGame() {
                 )}
             </Card>
 
-            {/* Player 2 (always second player, on bottom) */}
-            {activeGameState.players[1] && (
+            {/* Human Player (Player 1) at BOTTOM for thumb zone optimization */}
+            {activeGameState.players[0] && (
                 <div className="relative rounded-2xl transition-all duration-500">
                     <PlayerHand
-                        player={activeGameState.players[1]}
-                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === 1}
+                        player={activeGameState.players[0]}
+                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === 0}
+                        isOpponent={false}
                         selectedCardIndex={null}
                         canInteract={
                             isInitialReveal ||
-                            (activeGameState.currentPlayerIndex === 1 && (
+                            (activeGameState.currentPlayerIndex === 0 && (
                                 activeGameState.turnPhase === 'REPLACE_OR_DISCARD' ||
                                 activeGameState.turnPhase === 'MUST_REPLACE' ||
                                 activeGameState.turnPhase === 'MUST_REVEAL'
@@ -1357,9 +1360,9 @@ export default function VirtualGame() {
                         }
                         onCardClick={(index) => {
                             if (isInitialReveal) {
-                                handleInitialReveal(1, index);
+                                handleInitialReveal(0, index);
                             } else {
-                                if (activeGameState.currentPlayerIndex !== 1) return;
+                                if (activeGameState.currentPlayerIndex !== 0) return;
                                 handleCardClick(index);
                             }
                         }}

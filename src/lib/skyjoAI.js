@@ -121,8 +121,32 @@ const findBestReplacementPosition = (hand, cardValue, difficulty) => {
         }
     }
 
-    // For good cards (low value), prefer replacing hidden cards
+    // SMART STRATEGY: For excellent cards (negative or 0), prioritize replacing 
+    // high-value revealed cards over gambling on hidden cards
+    if (cardValue <= 0) {
+        const highest = findHighestRevealedCard(hand);
+        // If we have a high revealed card (8+), definitely replace it
+        // The guaranteed gain from replacing a 12 with a -1 (13 points) is better
+        // than the uncertain outcome of revealing a hidden card
+        if (highest.index !== -1 && highest.value >= 8) {
+            return highest.index;
+        }
+        // If no high cards revealed, still prefer replacing ANY revealed card that's worse
+        if (highest.index !== -1 && cardValue < highest.value) {
+            return highest.index;
+        }
+    }
+
+    // For good cards (1-3), also check if replacing a high revealed card is better
     if (cardValue <= 3) {
+        const highest = findHighestRevealedCard(hand);
+        // If there's a revealed card significantly worse (difference >= 5), replace it
+        // E.g., replace a 10 with a 3 (saves 7 points) instead of risking hidden card
+        if (highest.index !== -1 && highest.value >= cardValue + 5) {
+            return highest.index;
+        }
+
+        // Otherwise, for modest good cards, hidden cards can be okay
         if (hiddenIndices.length > 0) {
             // In hard mode, try to find hidden cards in promising columns
             if (difficulty === AI_DIFFICULTY.HARD) {
