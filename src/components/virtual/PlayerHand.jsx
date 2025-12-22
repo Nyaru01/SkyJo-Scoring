@@ -18,7 +18,9 @@ const PlayerHand = memo(function PlayerHand({
     onCardClick,
     canInteract = false,
     showName = true,
+    showName = true,
     size = 'md',
+    shakingCardIndex = null,
 }) {
     // Skyjo grid: 4 columns x 3 rows = 12 cards
     // Layout: column-first (0,1,2 = col1, 3,4,5 = col2, etc.)
@@ -154,6 +156,7 @@ const PlayerHand = memo(function PlayerHand({
                                     isSelected={selectedCardIndex === cardIndex || isPendingReveal}
                                     isClickable={canInteract && card !== null}
                                     isHighlighted={canInteract && card && !card.isRevealed && !isPendingReveal}
+                                    isShaking={shakingCardIndex === cardIndex}
                                     onClick={() => onCardClick?.(cardIndex)}
                                 />
                             </motion.div>

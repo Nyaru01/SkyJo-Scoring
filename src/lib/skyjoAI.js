@@ -116,6 +116,9 @@ const findBestReplacementPosition = (hand, cardValue, difficulty) => {
     // Check for column completion opportunities first
     for (const idx of [...revealedIndices, ...hiddenIndices]) {
         if (hand[idx] === null) continue;
+        // CRITICAL FIX: Never replace a card with the same value (waste of turn)
+        if (hand[idx].isRevealed && hand[idx].value === cardValue) continue;
+
         if (checkColumnPotential(hand, idx, cardValue)) {
             return idx;
         }
@@ -222,6 +225,8 @@ export const decideDrawSource = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
         const hand = currentPlayer.hand;
         for (let i = 0; i < hand.length; i++) {
             if (hand[i] && checkColumnPotential(hand, i, discardValue)) {
+                // Fix: Don't take from discard if we would just replace same value
+                if (hand[i].isRevealed && hand[i].value === discardValue) continue;
                 return 'DISCARD_PILE';
             }
         }
@@ -252,6 +257,8 @@ export const decideDrawSource = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
         // Check if discard could complete a column
         for (let i = 0; i < currentPlayer.hand.length; i++) {
             if (currentPlayer.hand[i] && checkColumnPotential(currentPlayer.hand, i, discardValue)) {
+                // Fix: Don't take from discard if we would just replace same value
+                if (currentPlayer.hand[i].isRevealed && currentPlayer.hand[i].value === discardValue) continue;
                 return 'DISCARD_PILE';
             }
         }

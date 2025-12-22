@@ -582,7 +582,7 @@ export const useVirtualGameStore = create((set, get) => ({
             gameWinner,
         });
 
-        return { isGameOver, newTotalScores };
+        return { isGameOver, newTotalScores, gameWinner };
     },
 
     /**

@@ -97,9 +97,17 @@ const SkyjoCard = memo(function SkyjoCard({
     isSelected = false,
     isClickable = false,
     isHighlighted = false,
+    isShaking = false,
     onClick,
     className,
 }) {
+    // Shake animation variants
+    const shakeVariants = {
+        shake: {
+            x: [0, -5, 5, -5, 5, 0],
+            transition: { duration: 0.4 }
+        }
+    };
     // Dynamic sizing - 2:3 ratio
     const sizeStyles = {
         xs: {
@@ -168,6 +176,8 @@ const SkyjoCard = memo(function SkyjoCard({
             onClick={isClickable ? onClick : undefined}
             whileHover={isClickable ? { scale: 1.08, y: -4 } : undefined}
             whileTap={isClickable ? { scale: 0.95 } : undefined}
+            animate={isShaking ? "shake" : undefined}
+            variants={shakeVariants}
         >
             {/* Extended touch area */}
             {isClickable && (

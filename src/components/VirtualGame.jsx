@@ -188,7 +188,7 @@ export default function VirtualGame() {
     const [hasArchivedOnline, setHasArchivedOnline] = useState(false);
 
     // Track if we've archived the current AI/local game
-    const [hasArchivedVirtual, setHasArchivedVirtual] = useState(false);
+    // Track if we've archived the current AI/local game (REMOVED: handled manually now)
     const archiveVirtualGame = useGameStore(s => s.archiveVirtualGame);
     const addXP = useGameStore(s => s.addXP);
     const gameMode = useVirtualGameStore(s => s.gameMode);
@@ -216,35 +216,7 @@ export default function VirtualGame() {
         }
     }, [onlineIsGameOver, onlineGameStarted, hasArchivedOnline, onlinePlayers, onlineTotalScores, onlineGameWinner, onlineRoundNumber, archiveOnlineGame, socketId, addXP]);
 
-    // Archive AI/local game when it ends
-    useEffect(() => {
-        if (isGameOver && gameState && !hasArchivedVirtual && !onlineGameStarted) {
-            archiveVirtualGame({
-                players: gameState.players,
-                totalScores: totalScores,
-                winner: gameWinner,
-                roundsPlayed: roundNumber,
-                gameType: aiMode ? 'ai' : 'local'
-            });
 
-            // Award XP if human player won
-            // In AI mode, human is 'human-1', in local mode, award XP to any winner
-            if (gameWinner) {
-                if (aiMode && gameWinner.id === 'human-1') {
-                    addXP(1);
-                } else if (!aiMode) {
-                    // In local virtual mode, always award XP (playing with friends)
-                    addXP(1);
-                }
-            }
-
-            setHasArchivedVirtual(true);
-        }
-        // Reset when starting a new game
-        if (!isGameOver && hasArchivedVirtual) {
-            setHasArchivedVirtual(false);
-        }
-    }, [isGameOver, gameState, hasArchivedVirtual, totalScores, gameWinner, roundNumber, aiMode, onlineGameStarted, archiveVirtualGame, addXP]);
 
 
     // AI Auto-play: Execute AI turns automatically with delay
@@ -425,7 +397,8 @@ export default function VirtualGame() {
 
         // Archive AI/local game when quitting (even if not finished)
         // Only archive if not already archived (avoid duplicates)
-        if (gameState && gameState.players && gameState.players.length > 0 && !onlineGameStarted && !hasArchivedVirtual) {
+        // If game is over, it was already archived by the "See Results" button
+        if (gameState && gameState.players && gameState.players.length > 0 && !onlineGameStarted && !isGameOver) {
             // Calculate current winner based on totalScores
             const scores = totalScores || {};
             const playersWithScores = gameState.players.map(p => ({
@@ -1305,9 +1278,30 @@ export default function VirtualGame() {
                                         startOnlineNextRound();
                                     } else {
                                         // Local mode: use local store
-                                        endRound(); // Update cumulative scores
-                                        if (!gameEndsAfterThisRound) {
-                                            startNextRound(); // Start next round if game continues
+                                        // Capture results directly to ensure we have the latest state for archiving
+                                        const result = endRound();
+
+                                        // If game is over, archive immediately with the fresh scores
+                                        if (result && result.isGameOver) {
+                                            archiveVirtualGame({
+                                                players: activeGameState.players,
+                                                totalScores: result.newTotalScores,
+                                                winner: result.gameWinner,
+                                                roundsPlayed: roundNumber,
+                                                gameType: aiMode ? 'ai' : 'local'
+                                            });
+
+                                            // Award XP if applicable
+                                            if (result.gameWinner) {
+                                                if (aiMode && result.gameWinner.id === 'human-1') {
+                                                    addXP(1);
+                                                } else if (!aiMode) {
+                                                    addXP(1);
+                                                }
+                                            }
+                                        } else {
+                                            // Start next round if game continues
+                                            startNextRound();
                                         }
                                     }
                                     setInitialReveals({}); // Reset initial reveals for new round
@@ -1501,6 +1495,12 @@ export default function VirtualGame() {
                         {activeGameState.turnPhase === 'MUST_REVEAL' && (
                             '👆 Retournez une carte cachée'
                         )}
+                        {/* Last Round Banner */}
+                        {activeGameState.phase === 'FINAL_ROUND' && (
+                            <div className="mt-2 text-xs font-black text-amber-300 animate-pulse uppercase tracking-widest border border-amber-500/50 rounded-full px-2 py-0.5 bg-amber-900/40">
+                                ⚠️ Dernier Tour ! ⚠️
+                            </div>
+                        )}
                     </span>
                 </motion.div>
             </AnimatePresence>
@@ -1531,6 +1531,7 @@ export default function VirtualGame() {
                             }
                         }}
                         size="md"
+                        shakingCardIndex={shakingCard?.playerIndex === myPlayerIndex ? shakingCard.cardIndex : null}
                     />
                 </div>
             )}
