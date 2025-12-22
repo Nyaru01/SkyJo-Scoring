@@ -1076,6 +1076,16 @@ export default function VirtualGame() {
         return null;
     }
 
+    // Calculate the local player's index in the game state
+    // In online mode, find the player matching our socketId
+    // In local/AI mode, player 0 is always the local player
+    const myPlayerIndex = isOnlineMode
+        ? activeGameState.players.findIndex(p => p.id === socketId)
+        : 0;
+
+    // Determine the opponent's index (for 2-player games)
+    const opponentIndex = myPlayerIndex === 0 ? 1 : 0;
+
     const currentPlayer = activeGameState.players[activeGameState.currentPlayerIndex];
     const isInitialReveal = activeGameState.phase === 'INITIAL_REVEAL';
     const isFinished = activeGameState.phase === 'FINISHED';
@@ -1300,11 +1310,11 @@ export default function VirtualGame() {
     }
 
     // Determine vignette color based on whose turn it is
-    const isPlayerTurn = !isInitialReveal && activeGameState.currentPlayerIndex === 0;
-    const isBotTurn = !isInitialReveal && activeGameState.currentPlayerIndex === 1;
-    const vignetteColor = isPlayerTurn
+    const isMyTurn = !isInitialReveal && activeGameState.currentPlayerIndex === myPlayerIndex;
+    const isOpponentTurn = !isInitialReveal && activeGameState.currentPlayerIndex === opponentIndex;
+    const vignetteColor = isMyTurn
         ? 'radial-gradient(ellipse at center, transparent 50%, rgba(34, 197, 94, 0.15) 100%)'
-        : isBotTurn
+        : isOpponentTurn
             ? 'radial-gradient(ellipse at center, transparent 50%, rgba(239, 68, 68, 0.15) 100%)'
             : 'none';
 
@@ -1313,9 +1323,9 @@ export default function VirtualGame() {
             className="max-w-3xl mx-auto p-1 sm:p-2 space-y-1 sm:space-y-3 animate-in fade-in relative"
             style={{
                 // Vignette effect around edges based on turn
-                boxShadow: isPlayerTurn
+                boxShadow: isMyTurn
                     ? 'inset 0 0 80px rgba(34, 197, 94, 0.2)'
-                    : isBotTurn
+                    : isOpponentTurn
                         ? 'inset 0 0 80px rgba(239, 68, 68, 0.2)'
                         : 'none',
             }}
@@ -1361,30 +1371,17 @@ export default function VirtualGame() {
                 </div>
             </div>
 
-            {/* Bot/Opponent (Player 2) at TOP for thumb zone optimization */}
-            {activeGameState.players[1] && (
+            {/* Opponent at TOP for thumb zone optimization */}
+            {activeGameState.players[opponentIndex] && (
                 <div className="relative rounded-2xl transition-all duration-500">
                     <PlayerHand
-                        player={activeGameState.players[1]}
-                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === 1}
+                        player={activeGameState.players[opponentIndex]}
+                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === opponentIndex}
                         isOpponent={true}
+                        isOnlineOpponent={isOnlineMode} // Show real name for online opponents
                         selectedCardIndex={null}
-                        canInteract={
-                            isInitialReveal ||
-                            (activeGameState.currentPlayerIndex === 1 && (
-                                activeGameState.turnPhase === 'REPLACE_OR_DISCARD' ||
-                                activeGameState.turnPhase === 'MUST_REPLACE' ||
-                                activeGameState.turnPhase === 'MUST_REVEAL'
-                            ))
-                        }
-                        onCardClick={(index) => {
-                            if (isInitialReveal) {
-                                handleInitialReveal(1, index);
-                            } else {
-                                if (activeGameState.currentPlayerIndex !== 1) return;
-                                handleCardClick(index);
-                            }
-                        }}
+                        canInteract={false} // Opponent's hand is never directly interactive for local player
+                        onCardClick={() => { }} // No interaction on opponent's hand
                         size="md"
                     />
                 </div>
@@ -1402,18 +1399,22 @@ export default function VirtualGame() {
                             onDrawAction={() => {
                                 // Direct draw action
                                 if (activeGameState.turnPhase === 'DRAW') {
-                                    drawFromDrawPile();
+                                    if (isOnlineMode) {
+                                        emitGameAction('draw_pile');
+                                    } else {
+                                        drawFromDrawPile();
+                                    }
                                     setShowDrawDiscardPopup(true);
                                 }
                             }}
                             onDiscardAction={() => {
                                 // Direct discard take action
                                 if (activeGameState.turnPhase === 'DRAW') {
-                                    // Just open popup for discard take confirmation/action
-                                    // Or we could auto-take: takeFromDiscard();
-                                    // But taking from discard commits you. The popup shows the discard card clearly.
-                                    // Let's auto-take to be fluid as requested "montre la carte" -> implies we took it
-                                    takeFromDiscard();
+                                    if (isOnlineMode) {
+                                        emitGameAction('draw_discard');
+                                    } else {
+                                        takeFromDiscard();
+                                    }
                                     setShowDrawDiscardPopup(true);
                                 }
                             }}
@@ -1423,7 +1424,7 @@ export default function VirtualGame() {
                             discardPileCount={activeGameState.discardPile.length}
                             canInteract={
                                 !isInitialReveal &&
-                                activeGameState.currentPlayerIndex === 0 &&
+                                activeGameState.currentPlayerIndex === myPlayerIndex &&
                                 (activeGameState.turnPhase === 'DRAW' || (!!activeGameState.drawnCard))
                             }
                             turnPhase={activeGameState.turnPhase}
@@ -1478,17 +1479,18 @@ export default function VirtualGame() {
                 </motion.div>
             </AnimatePresence>
 
-            {/* Human Player (Player 1) at BOTTOM for thumb zone optimization */}
-            {activeGameState.players[0] && (
+            {/* Local Player at BOTTOM for thumb zone optimization */}
+            {activeGameState.players[myPlayerIndex] && (
                 <div className="relative rounded-2xl transition-all duration-500">
                     <PlayerHand
-                        player={activeGameState.players[0]}
-                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === 0}
+                        player={activeGameState.players[myPlayerIndex]}
+                        isCurrentPlayer={!isInitialReveal && activeGameState.currentPlayerIndex === myPlayerIndex}
                         isOpponent={false}
                         selectedCardIndex={null}
+                        pendingRevealIndices={isInitialReveal ? (initialReveals[`player-${myPlayerIndex}`] || []) : []}
                         canInteract={
                             isInitialReveal ||
-                            (activeGameState.currentPlayerIndex === 0 && (
+                            (activeGameState.currentPlayerIndex === myPlayerIndex && (
                                 activeGameState.turnPhase === 'REPLACE_OR_DISCARD' ||
                                 activeGameState.turnPhase === 'MUST_REPLACE' ||
                                 activeGameState.turnPhase === 'MUST_REVEAL'
@@ -1496,9 +1498,9 @@ export default function VirtualGame() {
                         }
                         onCardClick={(index) => {
                             if (isInitialReveal) {
-                                handleInitialReveal(0, index);
+                                handleInitialReveal(myPlayerIndex, index);
                             } else {
-                                if (activeGameState.currentPlayerIndex !== 0) return;
+                                if (activeGameState.currentPlayerIndex !== myPlayerIndex) return;
                                 handleCardClick(index);
                             }
                         }}
@@ -1589,6 +1591,7 @@ export default function VirtualGame() {
                     setShowDrawDiscardPopup(false);
                 }}
                 drawPileCount={activeGameState.drawPile.length}
+                discardPileCount={activeGameState.discardPile.length}
                 discardTop={discardTop}
                 drawnCard={activeGameState.drawnCard}
                 canDraw={activeGameState.turnPhase === 'DRAW'}

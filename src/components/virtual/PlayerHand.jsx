@@ -12,7 +12,9 @@ const PlayerHand = memo(function PlayerHand({
     isCurrentPlayer = false,
     isLocalPlayer = false,
     isOpponent = false,
+    isOnlineOpponent = false, // True if this is an online opponent (show real name, not "BOT")
     selectedCardIndex,
+    pendingRevealIndices = [], // Cards currently selected during initial reveal (for visual flip)
     onCardClick,
     canInteract = false,
     showName = true,
@@ -88,7 +90,11 @@ const PlayerHand = memo(function PlayerHand({
                     }}
                 >
                     {isOpponent ? (
-                        <span className="text-xs">🤖 BOT</span>
+                        isOnlineOpponent ? (
+                            <span className="text-xs">{player.emoji} {player.name}</span>
+                        ) : (
+                            <span className="text-xs">🤖 BOT</span>
+                        )
                     ) : (
                         <span className="text-xs">👤 VOUS</span>
                     )}
@@ -126,6 +132,14 @@ const PlayerHand = memo(function PlayerHand({
                         const cardIndex = getCardIndex(row, col);
                         const card = player.hand[cardIndex];
 
+                        // Check if this card is pending reveal (selected but not yet confirmed)
+                        const isPendingReveal = pendingRevealIndices.includes(cardIndex);
+
+                        // Create a modified card for visual display if pending reveal
+                        const displayCard = card && isPendingReveal && !card.isRevealed
+                            ? { ...card, isRevealed: true }
+                            : card;
+
                         return (
                             <motion.div
                                 key={`${row}-${col}`}
@@ -133,11 +147,11 @@ const PlayerHand = memo(function PlayerHand({
                                 style={{ position: 'relative', zIndex: 1 }}
                             >
                                 <SkyjoCard
-                                    card={card}
+                                    card={displayCard}
                                     size={size}
-                                    isSelected={selectedCardIndex === cardIndex}
+                                    isSelected={selectedCardIndex === cardIndex || isPendingReveal}
                                     isClickable={canInteract && card !== null}
-                                    isHighlighted={canInteract && card && !card.isRevealed}
+                                    isHighlighted={canInteract && card && !card.isRevealed && !isPendingReveal}
                                     onClick={() => onCardClick?.(cardIndex)}
                                 />
                             </motion.div>

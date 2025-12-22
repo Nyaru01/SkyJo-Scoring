@@ -11,6 +11,7 @@ const DrawDiscardPopup = memo(function DrawDiscardPopup({
     isOpen,
     onClose,
     drawPileCount,
+    discardPileCount,
     discardTop,
     drawnCard,
     canDraw = false,
