@@ -10,6 +10,7 @@ import DrawDiscard from './virtual/DrawDiscard';
 import DrawDiscardPopup from './virtual/DrawDiscardPopup';
 import DrawDiscardTrigger from './virtual/DrawDiscardTrigger';
 import SkyjoCard from './virtual/SkyjoCard';
+import ExperienceBar from './ExperienceBar';
 import { useVirtualGameStore, selectAIMode, selectAIPlayers, selectIsCurrentPlayerAI, selectIsAIThinking } from '../store/virtualGameStore';
 import { useOnlineGameStore } from '../store/onlineGameStore';
 import { useGameStore } from '../store/gameStore';
@@ -169,6 +170,7 @@ export default function VirtualGame() {
     // Track if we've archived the current AI/local game
     const [hasArchivedVirtual, setHasArchivedVirtual] = useState(false);
     const archiveVirtualGame = useGameStore(s => s.archiveVirtualGame);
+    const addXP = useGameStore(s => s.addXP);
     const gameMode = useVirtualGameStore(s => s.gameMode);
 
     // Archive online game when it ends
@@ -180,13 +182,19 @@ export default function VirtualGame() {
                 winner: onlineGameWinner,
                 roundsPlayed: onlineRoundNumber
             });
+
+            // Award XP if human won the online game
+            if (onlineGameWinner && socketId && onlineGameWinner.id === socketId) {
+                addXP(1);
+            }
+
             setHasArchivedOnline(true);
         }
         // Reset when starting a new game
         if (!onlineIsGameOver && hasArchivedOnline) {
             setHasArchivedOnline(false);
         }
-    }, [onlineIsGameOver, onlineGameStarted, hasArchivedOnline, onlinePlayers, onlineTotalScores, onlineGameWinner, onlineRoundNumber, archiveOnlineGame]);
+    }, [onlineIsGameOver, onlineGameStarted, hasArchivedOnline, onlinePlayers, onlineTotalScores, onlineGameWinner, onlineRoundNumber, archiveOnlineGame, socketId, addXP]);
 
     // Archive AI/local game when it ends
     useEffect(() => {
@@ -198,13 +206,25 @@ export default function VirtualGame() {
                 roundsPlayed: roundNumber,
                 gameType: aiMode ? 'ai' : 'local'
             });
+
+            // Award XP if human player won
+            // In AI mode, human is 'human-1', in local mode, award XP to any winner
+            if (gameWinner) {
+                if (aiMode && gameWinner.id === 'human-1') {
+                    addXP(1);
+                } else if (!aiMode) {
+                    // In local virtual mode, always award XP (playing with friends)
+                    addXP(1);
+                }
+            }
+
             setHasArchivedVirtual(true);
         }
         // Reset when starting a new game
         if (!isGameOver && hasArchivedVirtual) {
             setHasArchivedVirtual(false);
         }
-    }, [isGameOver, gameState, hasArchivedVirtual, totalScores, gameWinner, roundNumber, aiMode, onlineGameStarted, archiveVirtualGame]);
+    }, [isGameOver, gameState, hasArchivedVirtual, totalScores, gameWinner, roundNumber, aiMode, onlineGameStarted, archiveVirtualGame, addXP]);
 
 
     // AI Auto-play: Execute AI turns automatically with delay
@@ -476,6 +496,9 @@ export default function VirtualGame() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Experience Bar */}
+                <ExperienceBar className="px-1" />
 
                 {/* Rules Button */}
                 <button

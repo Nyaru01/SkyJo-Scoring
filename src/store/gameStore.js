@@ -39,6 +39,34 @@ export const useGameStore = create(
             soundEnabled: true,
             musicEnabled: true,
 
+            // XP & Level System
+            currentXP: 0,  // 0-9, resets to 0 on level up
+            level: 1,      // Starts at level 1
+
+            /**
+             * Add XP points (called on victory)
+             * @param {number} amount - XP to add (default 1)
+             */
+            addXP: (amount = 1) => {
+                const { currentXP, level } = get();
+                const newXP = currentXP + amount;
+
+                if (newXP >= 10) {
+                    // Level up!
+                    set({
+                        currentXP: newXP - 10,  // Carry over excess XP
+                        level: level + 1
+                    });
+                } else {
+                    set({ currentXP: newXP });
+                }
+            },
+
+            /**
+             * Reset XP and Level (for testing/admin)
+             */
+            resetXP: () => set({ currentXP: 0, level: 1 }),
+
             toggleDarkMode: () => {
                 const newMode = !get().darkMode;
                 document.documentElement.classList.toggle('dark', newMode);
