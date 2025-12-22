@@ -1451,6 +1451,9 @@ export default function VirtualGame() {
                                 (activeGameState.turnPhase === 'DRAW' || (!!activeGameState.drawnCard))
                             }
                             turnPhase={activeGameState.turnPhase}
+                            activeActionSource={
+                                (onlineGameStarted ? onlinePendingAnimation?.sourceId : virtualPendingAnimation?.sourceId)
+                            }
                         />
                     </div>
                 </div>

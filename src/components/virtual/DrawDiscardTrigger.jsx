@@ -88,6 +88,7 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
     discardPileCount = 0,
     canInteract = false,
     turnPhase,
+    activeActionSource, // 'deck-pile' or 'discard-pile' when an animation is starting from here
 }) {
     const hasDrawnCard = !!drawnCard;
     const showDiscardPreview = discardTop && !hasDrawnCard;
@@ -110,12 +111,19 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
                 )}
                 style={{
                     background: 'linear-gradient(135deg, #374151 0%, #1e293b 50%, #0f172a 100%)',
-                    boxShadow: canInteract ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
-                    border: '2px solid rgba(100, 116, 139, 0.4)',
+                    boxShadow: activeActionSource === 'deck-pile'
+                        ? '0 0 20px 5px rgba(52, 211, 153, 0.7)' // Intense Green Glow if active
+                        : canInteract ? '0 4px 12px rgba(0,0,0,0.5)' : 'none',
+                    border: activeActionSource === 'deck-pile'
+                        ? '2px solid #34d399' // Green border
+                        : '2px solid rgba(100, 116, 139, 0.4)',
+                    transition: 'box-shadow 0.3s ease, border-color 0.3s ease'
                 }}
                 onClick={canInteract ? (onDrawAction || onClick) : undefined}
                 whileHover={canInteract ? { scale: 1.1, rotate: -5 } : undefined}
                 whileTap={canInteract ? { scale: 0.95 } : undefined}
+                animate={activeActionSource === 'deck-pile' ? { scale: [1, 1.1, 1] } : {}}
+                transition={{ duration: 0.8, repeat: Infinity }}
                 id="deck-pile"
             >
                 {/* Card back design */}
@@ -146,9 +154,14 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
                     // Add a label below or above?
                     />
                     {/* Helper text below */}
-                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider drop-shadow-md">
-                            Carte Piochée
+                    <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap flex flex-col items-center gap-1">
+                        <span className={cn(
+                            "text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border shadow-lg backdrop-blur-sm",
+                            turnPhase === 'MUST_REPLACE'
+                                ? "bg-amber-500/20 border-amber-500/50 text-amber-300"
+                                : "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
+                        )}>
+                            {turnPhase === 'MUST_REPLACE' ? 'DÉFAUSSE' : 'PIOCHE'}
                         </span>
                     </div>
                 </motion.div>
@@ -195,13 +208,20 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
                         style={{
                             fontSize: '16px',
                             fontWeight: 'bold',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                            border: '2px solid rgba(255,255,255,0.5)',
+                            boxShadow: activeActionSource === 'discard-pile'
+                                ? '0 0 20px 5px rgba(245, 158, 11, 0.7)' // Amber Glow
+                                : '0 4px 12px rgba(0,0,0,0.5)',
+                            border: activeActionSource === 'discard-pile'
+                                ? '2px solid #f59e0b' // Amber border
+                                : '2px solid rgba(255,255,255,0.5)',
                             background: mosaicColors.secondary,
+                            transition: 'box-shadow 0.3s ease, border-color 0.3s ease'
                         }}
                         onClick={canInteract ? (onDiscardAction || onClick) : undefined}
                         whileHover={canInteract ? { scale: 1.1, rotate: 5 } : undefined}
                         whileTap={canInteract ? { scale: 0.95 } : undefined}
+                        animate={activeActionSource === 'discard-pile' ? { scale: [1, 1.1, 1] } : {}}
+                        transition={{ duration: 0.8, repeat: Infinity }}
                         id="discard-pile"
                     >
                         {/* Mosaic texture pattern */}
