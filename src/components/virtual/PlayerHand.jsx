@@ -88,6 +88,7 @@ const PlayerHand = memo(function PlayerHand({
                         zIndex: 50,
                         top: '-12px', // Slightly adjusted
                     }}
+                    id={`player-badge-${player.id}`}
                 >
                     {isOpponent ? (
                         isOnlineOpponent ? (
@@ -145,6 +146,7 @@ const PlayerHand = memo(function PlayerHand({
                                 key={`${row}-${col}`}
                                 variants={cardVariants}
                                 style={{ position: 'relative', zIndex: 1 }}
+                                id={`card-${player.id}-${cardIndex}`}
                             >
                                 <SkyjoCard
                                     card={displayCard}

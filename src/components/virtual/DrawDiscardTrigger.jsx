@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import SkyjoCard from './SkyjoCard';
 
 // Mosaic color schemes for each card color (same as SkyjoCard)
 const MOSAIC_COLORS = {
@@ -115,6 +116,7 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
                 onClick={canInteract ? (onDrawAction || onClick) : undefined}
                 whileHover={canInteract ? { scale: 1.1, rotate: -5 } : undefined}
                 whileTap={canInteract ? { scale: 0.95 } : undefined}
+                id="deck-pile"
             >
                 {/* Card back design */}
                 <svg className="w-6 h-6 text-emerald-400" viewBox="0 0 24 24" fill="none">
@@ -125,39 +127,61 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
                 {/* Count Badge for Draw Pile (Optional - usually on button but good to have here too maybe? No, kept on button) */}
             </motion.div>
 
-            <motion.button
-                onClick={onClick}
-                disabled={!canInteract}
-                className={cn(
-                    "flex items-center justify-center gap-4 w-full px-4 py-2 rounded-2xl transition-all relative z-10",
-                    canInteract
-                        ? "cursor-pointer bg-slate-700 hover:bg-slate-600 border border-emerald-500/50"
-                        : "cursor-not-allowed bg-slate-700/60 opacity-60 border border-slate-600/30"
-                )}
-                style={{
-                    boxShadow: canInteract
-                        ? '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 15px rgba(52, 211, 153, 0.2)'
-                        : '0 4px 15px rgba(0, 0, 0, 0.3)',
-                    maxWidth: '280px' // Limit button width so cards stay effective
-                }}
-                whileHover={canInteract ? { scale: 1.02, y: -2 } : undefined}
-                whileTap={canInteract ? { scale: 0.98 } : undefined}
-            >
-                {/* Label */}
-                <span className="text-sm font-bold text-white uppercase tracking-wide whitespace-nowrap">
-                    {hasDrawnCard ? 'Jouer' : 'Piocher'}
-                </span>
+            {hasDrawnCard ? (
+                // Show the actual drawn card in the center
+                <motion.div
+                    className={cn(
+                        "relative z-10",
+                        canInteract ? "cursor-pointer" : "cursor-default"
+                    )}
+                    onClick={onClick}
+                    whileHover={canInteract ? { scale: 1.05 } : undefined}
+                    whileTap={canInteract ? { scale: 0.95 } : undefined}
+                    id="drawn-card-slot"
+                >
+                    <SkyjoCard
+                        card={{ ...drawnCard, isRevealed: true }}
+                        size="md"
+                        isHighlighted={canInteract}
+                    // Add a label below or above?
+                    />
+                    {/* Helper text below */}
+                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider drop-shadow-md">
+                            Carte Piochée
+                        </span>
+                    </div>
+                </motion.div>
+            ) : (
+                <motion.button
+                    onClick={onClick}
+                    disabled={!canInteract}
+                    className={cn(
+                        "flex items-center justify-center gap-4 w-full px-4 py-2 rounded-2xl transition-all relative z-10",
+                        canInteract
+                            ? "cursor-pointer bg-slate-700 hover:bg-slate-600 border border-emerald-500/50"
+                            : "cursor-not-allowed bg-slate-700/60 opacity-60 border border-slate-600/30"
+                    )}
+                    style={{
+                        boxShadow: canInteract
+                            ? '0 4px 15px rgba(0, 0, 0, 0.3), 0 0 15px rgba(52, 211, 153, 0.2)'
+                            : '0 4px 15px rgba(0, 0, 0, 0.3)',
+                        maxWidth: '280px' // Limit button width so cards stay effective
+                    }}
+                    whileHover={canInteract ? { scale: 1.02, y: -2 } : undefined}
+                    whileTap={canInteract ? { scale: 0.98 } : undefined}
+                >
+                    {/* Label */}
+                    <span className="text-sm font-bold text-white uppercase tracking-wide whitespace-nowrap">
+                        Piocher
+                    </span>
 
-                {/* Draw pile count */}
-                <span className="text-xs font-medium text-slate-400 whitespace-nowrap">
-                    ({drawPileCount})
-                </span>
-
-                {/* Drawn card indicator */}
-                {hasDrawnCard && (
-                    <div className="w-3 h-3 rounded-full bg-amber-400 animate-pulse ml-2" />
-                )}
-            </motion.button>
+                    {/* Draw pile count */}
+                    <span className="text-xs font-medium text-slate-400 whitespace-nowrap">
+                        ({drawPileCount})
+                    </span>
+                </motion.button>
+            )}
 
             {/* Discard card preview - positioned to the right - CLICKABLE */}
             {/* Always render a placeholder to keep alignment symmetric if user wants "aligned all time" */}
@@ -178,6 +202,7 @@ const DrawDiscardTrigger = memo(function DrawDiscardTrigger({
                         onClick={canInteract ? (onDiscardAction || onClick) : undefined}
                         whileHover={canInteract ? { scale: 1.1, rotate: 5 } : undefined}
                         whileTap={canInteract ? { scale: 0.95 } : undefined}
+                        id="discard-pile"
                     >
                         {/* Mosaic texture pattern */}
                         <MiniMosaicPattern colors={mosaicColors} id={patternId} />

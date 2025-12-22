@@ -51,6 +51,12 @@ export const useVirtualGameStore = create((set, get) => ({
 
     clearNotification: () => set({ lastNotification: null }),
 
+    // Animation State
+    pendingAnimation: null, // { type, sourceId, targetId, card, onComplete }
+    setPendingAnimation: (animation) => set({ pendingAnimation: animation }),
+    clearPendingAnimation: () => set({ pendingAnimation: null }),
+
+
     /**
      * Start a new local game (full game with multiple rounds)
      */
@@ -165,28 +171,56 @@ export const useVirtualGameStore = create((set, get) => ({
                 // Step 1: Decide where to draw from
                 const drawSource = decideDrawSource(gameState, aiDifficulty);
                 let newState;
+                // Animation setup
+                const currentPlayer = gameState.players[currentPlayerIndex];
+
+                // Helper to execute draw with animation
+                const executeDrawWithAnimation = (sourceId, sourceCard, finalStateCalc) => {
+                    // 1. Set notification
+                    set({
+                        lastNotification: {
+                            type: 'info',
+                            message: `🤖 ${currentPlayer.name} ${sourceId === 'deck-pile' ? 'a pioché' : `a pris (${sourceCard.value})`}`,
+                            timestamp: Date.now()
+                        }
+                    });
+
+                    // 2. Trigger Animation
+                    // For draw, we don't have a specific target "hand" element that is visible for AI usually
+                    // But we can target the player's avatar or hand container if visible
+                    // Or just a central point. Let's try to target the player's hand container if possible.
+                    // Or we can add an ID to the hand container itself.
+                    // We want the card to fly to the CENTER (the drawn card slot)
+                    // We added ID `drawn-card-slot` in DrawDiscardTrigger
+                    const targetId = 'drawn-card-slot';
+
+                    set({
+                        pendingAnimation: {
+                            sourceId: sourceId,
+                            targetId: targetId,
+                            card: sourceCard || { value: '?', color: 'gray' }, // Provide dummy if deck
+                            onComplete: () => {
+                                // 3. Commit State Change after animation
+                                set({ gameState: finalStateCalc() });
+                            }
+                        }
+                    });
+                };
 
                 if (drawSource === 'DISCARD_PILE' && gameState.discardPile.length > 0) {
-                    const discardValue = gameState.discardPile[gameState.discardPile.length - 1].value;
-                    newState = drawFromDiscard(gameState);
-                    set({
-                        gameState: newState,
-                        lastNotification: {
-                            type: 'info',
-                            message: `🤖 ${gameState.players[currentPlayerIndex].name} a pris dans la défausse (${discardValue})`,
-                            timestamp: Date.now()
-                        }
-                    });
+                    const discardTop = gameState.discardPile[gameState.discardPile.length - 1];
+                    executeDrawWithAnimation(
+                        'discard-pile',
+                        discardTop,
+                        () => drawFromDiscard(get().gameState)
+                    );
                 } else {
-                    newState = drawFromPile(gameState);
-                    set({
-                        gameState: newState,
-                        lastNotification: {
-                            type: 'info',
-                            message: `🤖 ${gameState.players[currentPlayerIndex].name} a pioché`,
-                            timestamp: Date.now()
-                        }
-                    });
+                    // Draw from pile
+                    executeDrawWithAnimation(
+                        'deck-pile',
+                        null, // Unknown card for animation (face down)
+                        () => drawFromPile(get().gameState)
+                    );
                 }
 
                 return; // Will be called again for the next phase
@@ -195,33 +229,82 @@ export const useVirtualGameStore = create((set, get) => ({
             if (turnPhase === 'REPLACE_OR_DISCARD' || turnPhase === 'MUST_REPLACE') {
                 // Step 2: Decide what to do with drawn card
                 const decision = decideCardAction(gameState, aiDifficulty);
-                let newState;
+
+                const currentPlayer = gameState.players[currentPlayerIndex];
+                const drawnCard = gameState.drawnCard;
+
+                // We assume the card starts from "hand" area (or where it landed).
+                // But for the REPLACE animation, we want it to go from "somewhere" to the Grid Target.
+                // We'll use the center of screen or the player's general area as source?
+                // Actually, the previous animation landed it at `card-${currentPlayer.id}-4`.
+                // So let's start from there? Or maybe just use `deck-pile` if we didn't track it.
+                // Better: The "drawn card" is usually displayed in the UI (e.g., in the DrawDiscard component).
+                // But in AI turn, we don't see the Draw/Discard popup usually? 
+                // Wait, if AI is playing, the local player sees... the board.
+                // The AI doesn't open the popup.
+                // So the "drawn card" concept is abstract visually unless we show it.
+                // For now, let's assume it flies from the deck/discard to the target.
+
+                // If it was REPLACE:
+                // Animation: Hand/Deck -> Target Slot.
 
                 if (decision.action === 'REPLACE') {
-                    newState = replaceCard(gameState, decision.cardIndex);
-                    newState = endTurn(newState);
+                    // 1. Notify
                     set({
-                        gameState: newState,
-                        selectedCardIndex: null,
-                        isAIThinking: false,
                         lastNotification: {
                             type: 'info',
-                            message: `🤖 ${gameState.players[currentPlayerIndex].name} a remplacé une carte`,
+                            message: `🤖 ${currentPlayer.name} a remplacé une carte`,
                             timestamp: Date.now()
                         }
                     });
-                } else {
-                    // DISCARD_AND_REVEAL
-                    newState = discardAndReveal(gameState, decision.cardIndex);
-                    newState = endTurn(newState);
+
+                    // 2. Animate
+                    const targetId = `card-${currentPlayer.id}-${decision.cardIndex}`;
+
+                    // Source? If we just drew, it's virtually "in hand". 
+                    // Source? The card is currently displayed at the CENTER (drawn-card-slot)
+                    const sourceId = 'drawn-card-slot';
+
                     set({
-                        gameState: newState,
-                        selectedCardIndex: null,
-                        isAIThinking: false,
+                        pendingAnimation: {
+                            sourceId: sourceId,
+                            targetId: targetId,
+                            card: drawnCard,
+                            onComplete: () => {
+                                // 3. Commit
+                                let ns = replaceCard(get().gameState, decision.cardIndex);
+                                ns = endTurn(ns);
+                                set({ gameState: ns, selectedCardIndex: null, isAIThinking: false });
+                            }
+                        }
+                    });
+
+                } else {
+                    // DISCARD AND REVEAL
+                    // 1. Notify
+                    set({
                         lastNotification: {
                             type: 'info',
-                            message: `🤖 ${gameState.players[currentPlayerIndex].name} a défaussé et retourné une carte`,
+                            message: `🤖 ${currentPlayer.name} a défaussé et retourné une carte`,
                             timestamp: Date.now()
+                        }
+                    });
+
+                    // 2. Animate: Center -> Discard Pile
+                    const sourceId = 'drawn-card-slot';
+                    const targetId = 'discard-pile';
+
+                    set({
+                        pendingAnimation: {
+                            sourceId: sourceId,
+                            targetId: targetId,
+                            card: drawnCard,
+                            onComplete: () => {
+                                // 3. Commit
+                                let ns = discardAndReveal(get().gameState, decision.cardIndex);
+                                ns = endTurn(ns);
+                                set({ gameState: ns, selectedCardIndex: null, isAIThinking: false });
+                            }
                         }
                     });
                 }

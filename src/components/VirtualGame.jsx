@@ -9,6 +9,7 @@ import PlayerHand from './virtual/PlayerHand';
 import DrawDiscard from './virtual/DrawDiscard';
 import DrawDiscardPopup from './virtual/DrawDiscardPopup';
 import DrawDiscardTrigger from './virtual/DrawDiscardTrigger';
+import CardAnimationLayer from './virtual/CardAnimationLayer';
 import SkyjoCard from './virtual/SkyjoCard';
 import ExperienceBar from './ExperienceBar';
 import { useVirtualGameStore, selectAIMode, selectAIPlayers, selectIsCurrentPlayerAI, selectIsAIThinking } from '../store/virtualGameStore';
@@ -1634,7 +1635,7 @@ export default function VirtualGame() {
                 }}
                 onConfirmPlacement={() => {
                     // Just close popup - we are in 'MUST_REPLACE' or 'REPLACE_OR_DISCARD'
-                    // and user wants to place on grid.
+                    // and user wants to place on grid
                     setShowDrawDiscardPopup(false);
                 }}
                 onDiscardDrawnCard={() => {
@@ -1646,6 +1647,9 @@ export default function VirtualGame() {
                     setShowDrawDiscardPopup(false);
                 }}
             />
+
+            {/* Animation Layer - always on top */}
+            <CardAnimationLayer />
         </div>
     );
 }
