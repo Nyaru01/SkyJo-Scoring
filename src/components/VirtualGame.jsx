@@ -459,7 +459,7 @@ export default function VirtualGame() {
                             <div className="absolute inset-[2px] bg-[#1e2235] rounded-[18px] z-10" />
 
                             {/* Content */}
-                            <div className="relative z-20 flex items-center justify-start pl-20 gap-3 h-20 w-full text-white font-bold text-lg">
+                            <div className="relative z-20 flex items-center justify-start pl-20 gap-3 h-16 w-full text-white font-bold text-lg">
                                 {/* Halo effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity rounded-[18px]" />
                                 <Play className="h-6 w-6 fill-current" />
@@ -482,7 +482,7 @@ export default function VirtualGame() {
                             <div className="absolute inset-[2px] bg-[#1e2235] rounded-[18px] z-10" />
 
                             {/* Content */}
-                            <div className="relative z-20 flex items-center justify-start pl-20 gap-3 h-20 w-full text-[#5DA0F2] font-bold text-lg">
+                            <div className="relative z-20 flex items-center justify-start pl-20 gap-3 h-16 w-full text-[#5DA0F2] font-bold text-lg">
                                 {/* Halo effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-[#5DA0F2]/0 via-[#5DA0F2]/5 to-[#5DA0F2]/0 opacity-0 group-hover:opacity-100 transition-opacity rounded-[18px]" />
                                 <Wifi className="h-6 w-6" />
@@ -502,7 +502,7 @@ export default function VirtualGame() {
                             <div className="absolute inset-[2px] bg-[#1e2235] rounded-[18px] z-10" />
 
                             {/* Content */}
-                            <div className="relative z-20 flex items-center justify-start pl-20 gap-3 h-20 w-full text-[#C084FC] font-bold text-lg">
+                            <div className="relative z-20 flex items-center justify-start pl-20 gap-3 h-16 w-full text-[#C084FC] font-bold text-lg">
                                 {/* Halo effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-[#C084FC]/0 via-[#C084FC]/5 to-[#C084FC]/0 opacity-0 group-hover:opacity-100 transition-opacity rounded-[18px]" />
                                 <Bot className="h-6 w-6" />
