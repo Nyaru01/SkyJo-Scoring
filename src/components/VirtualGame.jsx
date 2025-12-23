@@ -459,24 +459,7 @@ export default function VirtualGame() {
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Local Game Button */}
-                        <button
-                            onClick={() => setScreen('setup')}
-                            className="w-full relative group cursor-pointer rounded-[20px] transition-all hover:scale-[1.02] shadow-xl"
-                        >
-                            {/* Border Gradient - White */}
-                            <div className="absolute inset-0 bg-white rounded-[20px] animate-border-pulse opacity-100 shadow-[0_0_20px_rgba(255,255,255,0.8)]" />
-                            {/* Opaque Center */}
-                            <div className="absolute inset-[2px] bg-[#1e2235] rounded-[18px] z-10" />
 
-                            {/* Content */}
-                            <div className="relative z-20 flex items-center justify-center gap-3 h-16 w-full text-white font-bold text-lg">
-                                {/* Halo effect */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity rounded-[18px]" />
-                                <Play className="h-6 w-6 fill-current" />
-                                Partie Locale
-                            </div>
-                        </button>
 
                         {/* Online Game Button */}
                         <button
@@ -521,15 +504,7 @@ export default function VirtualGame() {
                             </div>
                         </button>
 
-                        <div className="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-600 dark:text-slate-400">
-                            <div className="flex items-start gap-2">
-                                <Info className="h-4 w-4 mt-0.5 shrink-0 text-slate-500" />
-                                <p>
-                                    En mode local, passez l'écran entre les joueurs à
-                                    chaque tour.
-                                </p>
-                            </div>
-                        </div>
+
                     </CardContent>
                 </Card>
 
@@ -1586,7 +1561,7 @@ export default function VirtualGame() {
                                     </div>
 
                                     {/* Compact card grid */}
-                                    <div className="grid grid-cols-4 gap-0.5">
+                                    <div className="grid grid-cols-4 gap-1 justify-items-center">
                                         {player.hand.map((card, cardIdx) => {
                                             const row = cardIdx % 3;
                                             const col = Math.floor(cardIdx / 3);
@@ -1595,7 +1570,7 @@ export default function VirtualGame() {
                                                 <SkyjoCard
                                                     key={cardIdx}
                                                     card={player.hand[actualCardIdx]}
-                                                    size="xs"
+                                                    size="sm"
                                                     isClickable={false}
                                                 />
                                             );
