@@ -481,7 +481,7 @@ export default function VirtualGame() {
                             Skyjo Virtuel
                         </CardTitle>
                         <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-                            Jouez avec les vraies cartes !
+                            Défiez l'IA ou vos amis en ligne !
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
