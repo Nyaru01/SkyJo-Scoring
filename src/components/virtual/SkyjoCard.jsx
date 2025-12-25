@@ -189,8 +189,9 @@ const SkyjoCard = memo(function SkyjoCard({
             )}
 
             <motion.div
-                className="relative w-full h-full preserve-3d transition-transform duration-500"
+                className="relative w-full h-full preserve-3d"
                 animate={{ rotateY: isRevealed ? 0 : 180 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
                 initial={false}
             >
                 {/* FRONT FACE - Skeuomorphic card design */}
