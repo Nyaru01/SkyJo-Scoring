@@ -332,11 +332,11 @@ export default function VirtualGame() {
         const current = initialReveals[key] || [];
 
         if (current.includes(cardIndex)) {
-            setInitialReveals({
-                ...initialReveals,
-                [key]: current.filter((i) => i !== cardIndex),
-            });
-        } else if (current.length < 2) {
+            // Already revealed, do nothing (cannot hide it back)
+            return;
+        }
+
+        if (current.length < 2) {
             const newReveals = [...current, cardIndex];
             setInitialReveals({
                 ...initialReveals,
