@@ -179,6 +179,7 @@ export default function VirtualGame() {
     // Reset pending state when round number changes
     useEffect(() => {
         setIsNextRoundPending(false);
+        setInitialReveals({}); // Clear any previous round's initial reveals
     }, [onlineRoundNumber]);
 
     // Auto-navigate to game screen when online game starts
