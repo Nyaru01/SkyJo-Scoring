@@ -216,7 +216,7 @@ export default function GameSetup({ onNavigate }) {
                     </div>
                     <div className="text-left flex-1 relative z-30">
                         <p className="font-extrabold text-xl text-white drop-shadow-sm">Jouer en virtuel</p>
-                        <p className="text-sm text-slate-400 mt-1">Mode local ou en ligne</p>
+                        <p className="text-sm text-slate-400 mt-1">Contre l'IA ou en ligne</p>
                     </div>
                     <span className="text-white/80 text-2xl group-hover:translate-x-1 transition-transform relative z-30">→</span>
                 </div>
