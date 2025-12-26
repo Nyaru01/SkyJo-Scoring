@@ -89,6 +89,7 @@ export default function VirtualGame() {
     const onlineError = useOnlineGameStore(s => s.error);
     const onlineRoomCode = useOnlineGameStore(s => s.roomCode);
     const onlineIsHost = useOnlineGameStore(s => s.isHost);
+    const publicRooms = useOnlineGameStore(s => s.publicRooms);
     const socketId = useOnlineGameStore(s => s.socketId);
     const onlineLastNotificationRaw = useOnlineGameStore(s => s.lastNotification);
     const lastAction = useOnlineGameStore(s => s.lastAction);
@@ -172,6 +173,15 @@ export default function VirtualGame() {
             // If we got an error or info, likely the pending state should be cleared (especially error)
             if (onlineLastNotificationRaw.type === 'error') {
                 setIsNextRoundPending(false);
+            }
+            if (onlineLastNotificationRaw.type === 'error') {
+                setIsNextRoundPending(false);
+            }
+            // Check for sound trigger
+            if (onlineLastNotificationRaw.sound === 'join') {
+                const audio = new Audio('/Sounds/whoosh-radio-ready-219487.mp3');
+                audio.volume = 0.5;
+                audio.play().catch(e => console.log('Audio play failed', e)); // Auto-play restrictions
             }
         }
     }, [onlineLastNotificationRaw]);
@@ -1147,6 +1157,60 @@ export default function VirtualGame() {
                                 </div>
                                 <p className="text-xs text-center text-slate-500">Entrez le code à 4 lettres</p>
                             </div>
+                        </div>
+
+                        {/* Public Lobbies List */}
+                        <div className="pt-4 border-t border-slate-700/50">
+                            <h3 className="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                                <Users className="h-4 w-4" />
+                                Salons en attente ({publicRooms.length})
+                            </h3>
+
+                            {publicRooms.length === 0 ? (
+                                <div className="text-center p-6 border-2 border-dashed border-slate-700 rounded-xl bg-slate-800/30">
+                                    <p className="text-slate-500 text-sm">Aucun salon public disponible.</p>
+                                    <p className="text-xs text-slate-600 mt-1">Créez une salle pour commencer !</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                    {publicRooms.map((room) => (
+                                        <div
+                                            key={room.code}
+                                            className="flex items-center justify-between p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/50 rounded-xl transition-all cursor-pointer group"
+                                            onClick={() => {
+                                                setPlayerInfo(myPseudo || 'Joueur', myEmoji);
+                                                joinRoom(room.code);
+                                            }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-xl shadow-inner">
+                                                    {room.emoji}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-200 text-sm group-hover:text-blue-400 transition-colors">
+                                                        Salon de {room.hostName}
+                                                    </p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs text-slate-500 font-mono bg-slate-900/50 px-1.5 py-0.5 rounded">
+                                                            {room.code}
+                                                        </span>
+                                                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                                                            <Users className="h-3 w-3" />
+                                                            {room.playerCount}/8
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                className="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white"
+                                            >
+                                                Rejoindre
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

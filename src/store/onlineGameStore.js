@@ -23,6 +23,7 @@ export const useOnlineGameStore = create((set, get) => ({
     playerEmoji: '🐱',
     roomCode: null,
     isHost: false,
+    publicRooms: [], // Available public rooms
     error: null,
 
     // Game State (synced from server)
@@ -75,6 +76,21 @@ export const useOnlineGameStore = create((set, get) => ({
             socket.on('room_created', (roomCode) => {
                 console.log('[Socket] Room created:', roomCode);
                 set({ roomCode, isHost: true, error: null });
+            });
+
+            socket.on('room_list_update', (rooms) => {
+                set({ publicRooms: rooms });
+            });
+
+            socket.on('new_player_joined', ({ playerName, emoji }) => {
+                set({
+                    lastNotification: {
+                        type: 'info',
+                        message: `${emoji} ${playerName} a rejoint la partie !`,
+                        sound: 'join', // Custom flag to trigger sound
+                        timestamp: Date.now()
+                    }
+                });
             });
 
             socket.on('player_list_update', (players) => {

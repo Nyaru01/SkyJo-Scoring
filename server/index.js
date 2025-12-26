@@ -35,12 +35,34 @@ const io = new Server(httpServer, {
 
 const rooms = new Map();
 
+const getPublicRooms = () => {
+    const publicRooms = [];
+    for (const [code, room] of rooms.entries()) {
+        if (!room.gameStarted && room.players.length < 8 && room.isPublic) {
+            publicRooms.push({
+                code,
+                hostName: room.players.find(p => p.isHost)?.name || 'Inconnu',
+                playerCount: room.players.length,
+                emoji: room.players.find(p => p.isHost)?.emoji || '🎮'
+            });
+        }
+    }
+    return publicRooms;
+};
+
 const generateRoomCode = () => {
     return Math.random().toString(36).substring(2, 6).toUpperCase();
 };
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
+    // Send initial list
+    socket.emit('room_list_update', getPublicRooms());
+
+    socket.on('get_public_rooms', () => {
+        socket.emit('room_list_update', getPublicRooms());
+    });
 
     // --- Lobby Events ---
 
@@ -53,13 +75,17 @@ io.on('connection', (socket) => {
             roundNumber: 1,
             gameStarted: false,
             isGameOver: false,
-            gameWinner: null
+            gameWinner: null,
+            isPublic: true // Par défaut public
         });
 
         socket.join(roomCode);
         socket.emit('room_created', roomCode);
         io.to(roomCode).emit('player_list_update', rooms.get(roomCode).players);
         console.log(`Room ${roomCode} created by ${playerName}`);
+
+        // Broadcast update to all for lobby list
+        io.emit('room_list_update', getPublicRooms());
     });
 
     socket.on('join_room', ({ roomCode, playerName, emoji }) => {
@@ -88,7 +114,14 @@ io.on('connection', (socket) => {
         socket.join(roomCode.toUpperCase());
 
         io.to(roomCode.toUpperCase()).emit('player_list_update', room.players);
+        io.to(roomCode.toUpperCase()).emit('player_list_update', room.players);
         console.log(`${playerName} joined room ${roomCode}`);
+
+        // Update lobby list (player count changed)
+        io.emit('room_list_update', getPublicRooms());
+
+        // Notify others in room
+        socket.to(roomCode.toUpperCase()).emit('new_player_joined', { playerName, emoji });
     });
 
     socket.on('start_game', (roomCode) => {
@@ -107,6 +140,7 @@ io.on('connection', (socket) => {
 
         room.gameState = initializeGame(gamePlayers);
         room.gameStarted = true;
+        io.emit('room_list_update', getPublicRooms()); // Update list (room no longer available)
 
         // Init scores if first game
         if (Object.keys(room.totalScores).length === 0) {
@@ -337,7 +371,9 @@ io.on('connection', (socket) => {
                 if (room.players.length === 0) {
                     // Delete empty room
                     rooms.delete(roomCode);
+                    rooms.delete(roomCode);
                     console.log(`Room ${roomCode} deleted (empty)`);
+                    io.emit('room_list_update', getPublicRooms());
                 } else {
                     // Transfer host role if needed
                     let newHostName = null;
@@ -355,6 +391,7 @@ io.on('connection', (socket) => {
                         newHost: newHostName
                     });
                     io.to(roomCode).emit('player_list_update', room.players);
+                    io.emit('room_list_update', getPublicRooms()); // Update player count
 
                     // If game was in progress and < 2 players remain, end the game
                     if (room.gameStarted && room.players.length < 2) {
@@ -363,6 +400,11 @@ io.on('connection', (socket) => {
                         io.to(roomCode).emit('game_cancelled', {
                             reason: 'Pas assez de joueurs pour continuer'
                         });
+                        // Update because game cancelled = room might be available or gone? 
+                        // Actually if < 2 players and game cancelled, it becomes a lobby again? 
+                        // Logic in 'game_cancelled' usually implies reset. 
+                        // Let's ensure we update the list.
+                        io.emit('room_list_update', getPublicRooms());
                     }
                 }
                 break;
