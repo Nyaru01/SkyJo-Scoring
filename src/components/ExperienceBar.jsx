@@ -8,18 +8,9 @@ import { cn } from '../lib/utils';
  * Experience Bar Component (Compact version)
  * Displays a horizontal bar with 10 bubbles representing XP progress
  */
-const REWARDS = [
-    { level: 2, icon: "🍪", name: "Un Cookie (mi-fondant, mi-pixel)" },
-    { level: 3, icon: "🎨", name: "Skin \"Papyrus\" pour tes cartes (pour un look rétro-douteux)" },
-    { level: 4, icon: "☕", name: "Un Café Virtuel (booste la concentration du joueur de 0%)" },
-    { level: 5, icon: "👑", name: "Le Titre : \"Maître du -2\" affiché sur ton profil" },
-    { level: 6, icon: "📢", name: "Effet Sonore \"Klaxon\" quand tu révèles une carte 12" },
-    { level: 7, icon: "🕶️", name: "Icône de Profil \"Infiltré\" (le joueur porte des lunettes de soleil)" },
-    { level: 8, icon: "🍕", name: "Une Pizza Hawaïenne (divise la communauté, mais c'est offert)" },
-    { level: 9, icon: "✨", name: "Aura Scintillante autour de ton avatar pendant 3 parties" },
-    { level: 10, icon: "🤖", name: "Le Droit de narguer l'IA avec un emoji exclusif" },
-    { level: 11, icon: "🦄", name: "Licorne de Fin de Jeu qui traverse l'écran en cas de victoire" }
-];
+import { getRewardsList } from '../lib/rewards';
+
+const REWARDS = getRewardsList();
 
 const ExperienceBar = memo(function ExperienceBar({ className }) {
     const currentXP = useGameStore(state => state.currentXP);
@@ -28,7 +19,7 @@ const ExperienceBar = memo(function ExperienceBar({ className }) {
 
     // Calculate global progress to level 11 (max)
     // Assuming each level takes 10 XP
-    const maxLevel = 11;
+    const maxLevel = 16;
     const totalLevels = maxLevel - 1;
     const progressPercent = Math.min(100, Math.max(0, ((level - 1) / totalLevels) * 100));
 

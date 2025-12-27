@@ -7,23 +7,7 @@ import Confetti from 'react-confetti';
 import useWindowSize from '../hooks/useWindowSize';
 
 // Reward definitions
-const LEVEL_REWARDS = {
-    2: {
-        type: 'emoji',
-        content: '🍪',
-        name: 'Cookie Pixel',
-        description: 'Un délicieux cookie mi-fondant, mi-pixel. C\'est virtuel, donc 0 calorie !',
-        rarity: 'common'
-    },
-    3: {
-        type: 'skin',
-        image: '/card-back-papyrus.jpg',
-        name: 'Skin Papyrus',
-        description: 'Un look rétro-douteux pour vos cartes. L\'histoire s\'écrit... sur votre dos de carte.',
-        rarity: 'uncommon'
-    },
-    // Add placeholders if needed, or fallback to generic
-};
+import { LEVEL_REWARDS } from '../lib/rewards';
 
 export default function LevelUpReward() {
     const level = useGameStore(state => state.level);

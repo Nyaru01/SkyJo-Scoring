@@ -5,9 +5,9 @@
 
 // Difficulty levels
 export const AI_DIFFICULTY = {
-    EASY: 'easy',
     NORMAL: 'normal',
     HARD: 'hard',
+    HARDCORE: 'hardcore',
 };
 
 // AI player names (without emoji - emoji is set separately)
@@ -124,35 +124,36 @@ const findBestReplacementPosition = (hand, cardValue, difficulty) => {
         }
     }
 
-    // SMART STRATEGY: For excellent cards (negative or 0), prioritize replacing 
-    // high-value revealed cards over gambling on hidden cards
+    const highest = findHighestRevealedCard(hand);
+
+    // EXCELLENT CARDS (<= 0)
+    // Always replace highest revealed card if it's > cardValue, or reveal a hidden card
     if (cardValue <= 0) {
-        const highest = findHighestRevealedCard(hand);
-        // If we have a high revealed card (8+), definitely replace it
-        // The guaranteed gain from replacing a 12 with a -1 (13 points) is better
-        // than the uncertain outcome of revealing a hidden card
-        if (highest.index !== -1 && highest.value >= 8) {
+        // If we have a high revealed card (5+ for Hardcore/Hard), replace it
+        if (highest.index !== -1 && highest.value >= 5) {
             return highest.index;
         }
+        // Hardcore: Even if highest is low (e.g. 4), replacing with 0 is +4 diff, worth it
+        if (difficulty === AI_DIFFICULTY.HARDCORE && highest.index !== -1 && highest.value > cardValue) {
+            return highest.index;
+        }
+
         // If no high cards revealed, still prefer replacing ANY revealed card that's worse
         if (highest.index !== -1 && cardValue < highest.value) {
             return highest.index;
         }
     }
 
-    // For good cards (1-3), also check if replacing a high revealed card is better
-    if (cardValue <= 3) {
-        const highest = findHighestRevealedCard(hand);
-        // If there's a revealed card significantly worse (difference >= 5), replace it
-        // E.g., replace a 10 with a 3 (saves 7 points) instead of risking hidden card
-        if (highest.index !== -1 && highest.value >= cardValue + 5) {
+    // GOOD CARDS (1-4)
+    if (cardValue <= 4) {
+        // Replace significantly worse card
+        if (highest.index !== -1 && highest.value >= cardValue + 4) {
             return highest.index;
         }
 
-        // Otherwise, for modest good cards, hidden cards can be okay
+        // Hard/Hardcore: Smart hidden card usage
         if (hiddenIndices.length > 0) {
-            // In hard mode, try to find hidden cards in promising columns
-            if (difficulty === AI_DIFFICULTY.HARD) {
+            if (difficulty === AI_DIFFICULTY.HARD || difficulty === AI_DIFFICULTY.HARDCORE) {
                 // Prefer corners and edges for better column building
                 const cornerIndices = [0, 2, 9, 11].filter(i => hiddenIndices.includes(i));
                 if (cornerIndices.length > 0) {
@@ -163,15 +164,10 @@ const findBestReplacementPosition = (hand, cardValue, difficulty) => {
         }
     }
 
-    // For neutral/bad cards, replace the highest revealed card if worse
-    const highest = findHighestRevealedCard(hand);
-    if (highest.index !== -1 && cardValue < highest.value) {
+    // MEDIOCRE/BAD CARDS (> 4)
+    // Only replace if we have something TERRIBLE revealed (like a 12)
+    if (highest.index !== -1 && cardValue < highest.value && highest.value >= 10) {
         return highest.index;
-    }
-
-    // If card is bad but better than nothing, may still want a hidden spot
-    if (hiddenIndices.length > 0 && cardValue <= 6) {
-        return getRandomElement(hiddenIndices);
     }
 
     return -1; // Don't replace
@@ -183,14 +179,15 @@ const findBestReplacementPosition = (hand, cardValue, difficulty) => {
 
 /**
  * Choose 2 initial cards to reveal
- * Strategy: Random for easy, prefer corners for normal/hard
+ * Strategy: Random for normal, prefer corners for hard/hardcore
  */
 export const chooseInitialCardsToReveal = (hand, difficulty = AI_DIFFICULTY.NORMAL) => {
-    if (difficulty === AI_DIFFICULTY.EASY) {
+    // Normal: Random
+    if (difficulty === AI_DIFFICULTY.NORMAL) {
         return getRandomIndices(2, hand.length);
     }
 
-    // For Normal/Hard: prefer corner positions (better for column building visibility)
+    // Hard/Hardcore: prefer corner positions (better for column building visibility)
     const preferredPositions = [0, 2, 9, 11]; // Corners
     const shuffled = [...preferredPositions].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 2);
@@ -209,19 +206,6 @@ export const decideDrawSource = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
 
     const discardValue = discardTop.value;
 
-    // Easy: Novice behavior
-    if (difficulty === AI_DIFFICULTY.EASY) {
-        // If discard is good (low value), likely take it
-        if (discardValue <= 5) {
-            // 70% chance to see the opportunity
-            if (Math.random() < 0.7) {
-                return 'DISCARD_PILE';
-            }
-        }
-        // Otherwise (bad value or missed opportunity), draw from pile
-        return 'DRAW_PILE';
-    }
-
     // Normal: Take discard if value <= 4
     if (difficulty === AI_DIFFICULTY.NORMAL) {
         if (discardValue <= 4) {
@@ -231,7 +215,6 @@ export const decideDrawSource = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
         const hand = currentPlayer.hand;
         for (let i = 0; i < hand.length; i++) {
             if (hand[i] && checkColumnPotential(hand, i, discardValue)) {
-                // Fix: Don't take from discard if we would just replace same value
                 if (hand[i].isRevealed && hand[i].value === discardValue) continue;
                 return 'DISCARD_PILE';
             }
@@ -239,17 +222,19 @@ export const decideDrawSource = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
         return 'DRAW_PILE';
     }
 
-    // Hard: More sophisticated analysis
-    if (difficulty === AI_DIFFICULTY.HARD) {
-        // Take negative cards always
+    // Hard / Hardcore: Sophisticated analysis
+    if (difficulty === AI_DIFFICULTY.HARD || difficulty === AI_DIFFICULTY.HARDCORE) {
+        // Always take negative cards
         if (discardValue <= 0) {
             return 'DISCARD_PILE';
         }
 
-        // Take low cards if they can replace high cards or complete columns
-        if (discardValue <= 3) {
+        // Hardcore: Aggressively take low cards (<= 4)
+        const threshold = difficulty === AI_DIFFICULTY.HARDCORE ? 4 : 3;
+
+        if (discardValue <= threshold) {
             const highest = findHighestRevealedCard(currentPlayer.hand);
-            if (highest.value > discardValue + 3) {
+            if (highest.value > discardValue + 2) { // Tighter threshold for swap
                 return 'DISCARD_PILE';
             }
             // Check column potential
@@ -260,7 +245,7 @@ export const decideDrawSource = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
             }
         }
 
-        // Check if discard could complete a column
+        // Check for column completion (Primary strat for Hardcore)
         for (let i = 0; i < currentPlayer.hand.length; i++) {
             if (currentPlayer.hand[i] && checkColumnPotential(currentPlayer.hand, i, discardValue)) {
                 // Fix: Don't take from discard if we would just replace same value
@@ -288,116 +273,125 @@ export const decideCardAction = (gameState, difficulty = AI_DIFFICULTY.NORMAL) =
     // If came from discard, MUST replace
     if (gameState.turnPhase === 'MUST_REPLACE') {
         const replaceIndex = findBestReplacementPosition(hand, drawnValue, difficulty);
-        // If no good position found, just replace a random card
+        // If no good position found, just replace a random card (should rarely happen for AI)
         const finalIndex = replaceIndex !== -1 ? replaceIndex : getRandomElement(
             hand.map((c, i) => c !== null ? i : -1).filter(i => i !== -1)
         );
         return { action: 'REPLACE', cardIndex: finalIndex };
     }
 
-    // Easy: Novice behavior (inconsistent but reasonable)
-    if (difficulty === AI_DIFFICULTY.EASY) {
-        // If drawn card is "good" (low value), try to use it
-        if (drawnValue <= 5) {
-            // 70% chance to play logically
-            if (Math.random() < 0.7) {
-                // Try to replace a higher revealed card
-                const highest = findHighestRevealedCard(hand);
-                if (highest.index !== -1 && highest.value > drawnValue) {
-                    return { action: 'REPLACE', cardIndex: highest.index };
-                }
-                // If we have a good card but no obvious replacement, try a hidden one
-                const hiddenIndices = getHiddenCardIndices(hand);
-                if (hiddenIndices.length > 0) {
-                    return { action: 'REPLACE', cardIndex: getRandomElement(hiddenIndices) };
-                }
-            }
-            // 30% chance or fallback: Replace a random card (maybe a bad move)
-            const validIndices = hand.map((c, i) => c !== null ? i : -1).filter(i => i !== -1);
-            return { action: 'REPLACE', cardIndex: getRandomElement(validIndices) };
+    // Normal: Strategic decision
+    if (difficulty === AI_DIFFICULTY.NORMAL) {
+        const replaceIndex = findBestReplacementPosition(hand, drawnValue, difficulty);
+        if (drawnValue <= 3 && replaceIndex !== -1) {
+            return { action: 'REPLACE', cardIndex: replaceIndex };
         }
-
-        // If card is "bad" (high value)
-        // 90% chance to discard and reveal hidden (correct move)
-        // unless no hidden cards left
+        const highest = findHighestRevealedCard(hand);
+        if (highest.index !== -1 && drawnValue < highest.value - 2) {
+            return { action: 'REPLACE', cardIndex: highest.index };
+        }
+        // Default: discard and reveal
         const hiddenIndices = getHiddenCardIndices(hand);
         if (hiddenIndices.length > 0) {
-            if (Math.random() < 0.9) {
-                return { action: 'DISCARD_AND_REVEAL', cardIndex: getRandomElement(hiddenIndices) };
-            }
-        }
-
-        // Mistake or must replace: Replace a random card
-        const validIndices = hand.map((c, i) => c !== null ? i : -1).filter(i => i !== -1);
-        return { action: 'REPLACE', cardIndex: getRandomElement(validIndices) };
-    }
-
-    // Normal/Hard: Strategic decision
-    const replaceIndex = findBestReplacementPosition(hand, drawnValue, difficulty);
-
-    // Good card (low value) - definitely replace something
-    if (drawnValue <= 3 && replaceIndex !== -1) {
-        return { action: 'REPLACE', cardIndex: replaceIndex };
-    }
-
-    // Check if we can improve by replacing highest card
-    const highest = findHighestRevealedCard(hand);
-    if (highest.index !== -1 && drawnValue < highest.value - 2) {
-        return { action: 'REPLACE', cardIndex: highest.index };
-    }
-
-    // Bad card (high value) - discard and reveal
-    if (drawnValue >= 8) {
-        const hiddenIndices = getHiddenCardIndices(hand);
-        if (hiddenIndices.length > 0) {
-            // In hard mode, prefer revealing cards that might help build columns
-            if (difficulty === AI_DIFFICULTY.HARD) {
-                // Check which hidden card is in the most promising column
-                let bestHiddenIdx = hiddenIndices[0];
-                let bestScore = -Infinity;
-
-                for (const idx of hiddenIndices) {
-                    const col = Math.floor(idx / 3);
-                    const colStart = col * 3;
-                    const colIndices = [colStart, colStart + 1, colStart + 2];
-
-                    // Score based on how many revealed cards with same value in column
-                    let score = 0;
-                    const revealedVals = colIndices
-                        .filter(i => i !== idx && hand[i] && hand[i].isRevealed)
-                        .map(i => hand[i].value);
-
-                    if (revealedVals.length === 2 && revealedVals[0] === revealedVals[1]) {
-                        score = 10; // High chance for column completion
-                    }
-
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestHiddenIdx = idx;
-                    }
-                }
-
-                return { action: 'DISCARD_AND_REVEAL', cardIndex: bestHiddenIdx };
-            }
-
             return { action: 'DISCARD_AND_REVEAL', cardIndex: getRandomElement(hiddenIndices) };
         }
     }
 
-    // Medium card - replace if we found a good spot, otherwise discard
-    if (replaceIndex !== -1) {
+    // Hard / Hardcore
+    const replaceIndex = findBestReplacementPosition(hand, drawnValue, difficulty);
+
+    // 1. Column Completion (Highest Priority)
+    // Check if this card completes a column
+    // (Handled inside findBestReplacementPosition, but verified here)
+    if (replaceIndex !== -1 && checkColumnPotential(hand, replaceIndex, drawnValue)) {
         return { action: 'REPLACE', cardIndex: replaceIndex };
     }
 
-    // Default: discard and reveal
-    const hiddenIndices = getHiddenCardIndices(hand);
-    if (hiddenIndices.length > 0) {
-        return { action: 'DISCARD_AND_REVEAL', cardIndex: getRandomElement(hiddenIndices) };
+    // 2. Good Card Strategy
+    // Hardcore: Always keep cards <= 4 if they improve the board
+    const goodCardThreshold = difficulty === AI_DIFFICULTY.HARDCORE ? 4 : 3;
+    if (drawnValue <= goodCardThreshold && replaceIndex !== -1) {
+        return { action: 'REPLACE', cardIndex: replaceIndex };
     }
 
-    // No hidden cards left, must replace
+    // 3. High Card Replacement
+    const highest = findHighestRevealedCard(hand);
+    if (highest.index !== -1 && drawnValue < highest.value) {
+        // Hardcore: Strict improvement
+        return { action: 'REPLACE', cardIndex: highest.index };
+    }
+
+    // 4. Bad/Mediocre Card -> Discard & Reveal Strategy
+    const hiddenIndices = getHiddenCardIndices(hand);
+    if (hiddenIndices.length > 0) {
+        // Hardcore/Hard: Target specific hidden cards to reveal
+
+        let bestHiddenIdx = hiddenIndices[0];
+        let bestScore = -Infinity;
+
+        for (const idx of hiddenIndices) {
+            const col = Math.floor(idx / 3);
+            const colStart = col * 3;
+            const colIndices = [colStart, colStart + 1, colStart + 2];
+
+            // Score based on column potential
+            let score = 0;
+            const revealedVals = colIndices
+                .filter(i => i !== idx && hand[i] && hand[i].isRevealed)
+                .map(i => hand[i].value);
+
+            // Hardcore Logic:
+            // - If column has 2 identical revealed cards: +20 (Try for Skyjo)
+            // - If column has 1 revealed card: +5 (Start building)
+            // - If column has 0 revealed cards: +1 (Explore)
+
+            if (revealedVals.length === 2 && revealedVals[0] === revealedVals[1]) {
+                score = 20;
+            } else if (revealedVals.length === 1) {
+                // Hardcore: Prefer columns where the revealed card is GOOD
+                if (difficulty === AI_DIFFICULTY.HARDCORE && revealedVals[0] <= 4) {
+                    score = 8;
+                } else {
+                    score = 5;
+                }
+            } else {
+                score = 1;
+            }
+
+            // Hardcore: Avoid revealing the last card if score is high (risky)
+            if (difficulty === AI_DIFFICULTY.HARDCORE && hiddenIndices.length === 1) {
+                const totalScore = calculateVisibleScore(hand);
+                if (totalScore > 50) {
+                    // Start closing out game, just take random
+                    score = 0;
+                }
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestHiddenIdx = idx;
+            }
+        }
+
+        // Add some randomness only for Normal (not reached here technically due to if block above)
+        // Hardcore is deterministic in its "best" choice
+        return { action: 'DISCARD_AND_REVEAL', cardIndex: bestHiddenIdx };
+    }
+
+    // No hidden cards left, must replace (Last Resort)
     const validIndices = hand.map((c, i) => c !== null ? i : -1).filter(i => i !== -1);
-    return { action: 'REPLACE', cardIndex: getRandomElement(validIndices) };
+    // Try to minimize damage
+    let bestIdx = validIndices[0];
+    let minDiff = Infinity; // We want minimum (new - old) which is negative or small positive
+    // Actually we want to replace the card where (drawn - current) is minimized?
+    // No, we want to replace the HIGHEST value card to minimize total score.
+
+    // We already checked "highest" above. If we are here, drawnValue >= highest.value.
+    // So we just replace the highest value card to minimize the GAIN.
+    bestIdx = findHighestRevealedCard(hand).index;
+    if (bestIdx === -1) bestIdx = validIndices[0];
+
+    return { action: 'REPLACE', cardIndex: bestIdx };
 };
 
 /**

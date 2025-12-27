@@ -675,46 +675,56 @@ export default function VirtualGame() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {playerLevel < 3 ? (
-                            <div className="relative p-4 rounded-xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center gap-2 text-center overflow-hidden">
-                                <div className="absolute inset-0 bg-slate-200/10 dark:bg-black/20 backdrop-blur-[1px]" />
-                                <div className="z-10 bg-slate-200 dark:bg-slate-700 p-3 rounded-full">
-                                    <Lock className="h-6 w-6 text-slate-500 dark:text-slate-400" />
-                                </div>
-                                <div className="z-10">
-                                    <p className="font-bold text-slate-600 dark:text-slate-300">Niveau 3 requis</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Jouez pour débloquer les skins !</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-2 gap-3">
-                                {[
-                                    { id: 'classic', name: 'Classique', img: '/card-back.png' },
-                                    { id: 'papyrus', name: 'Papyrus', img: '/card-back-papyrus.jpg' }
-                                ].map((skin) => {
-                                    const isSelected = playerCardSkin === skin.id;
-                                    return (
-                                        <div
-                                            key={skin.id}
-                                            onClick={() => useGameStore.getState().setCardSkin(skin.id)}
-                                            className={cn(
-                                                "relative cursor-pointer group rounded-xl overflow-hidden transition-all duration-300",
-                                                isSelected
-                                                    ? "ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900 scale-[1.02] shadow-lg"
-                                                    : "hover:scale-[1.02] hover:shadow-md border border-transparent hover:border-slate-300 dark:hover:border-slate-600"
-                                            )}
-                                        >
-                                            <div className="aspect-[2/3] w-full relative">
-                                                <img
-                                                    src={skin.img}
-                                                    alt={skin.name}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                {isSelected && (
-                                                    <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-full shadow-lg">
-                                                        <CheckCircle className="h-3 w-3" />
-                                                    </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {[
+                                { id: 'classic', name: 'Classique', img: '/card-back.png', level: 1 },
+                                { id: 'papyrus', name: 'Papyrus', img: '/card-back-papyrus.jpg', level: 3 },
+                                { id: 'neon', name: 'Neon', img: '/card-back-neon.png', level: 5 },
+                                { id: 'gold', name: 'Gold', img: '/card-back-gold.png', level: 10 },
+                                { id: 'galaxy', name: 'Galaxy', img: '/card-back-galaxy.png', level: 15 }
+                            ].map((skin) => {
+                                const isSelected = playerCardSkin === skin.id;
+                                const isLocked = playerLevel < skin.level;
+
+                                return (
+                                    <div
+                                        key={skin.id}
+                                        onClick={() => !isLocked && useGameStore.getState().setCardSkin(skin.id)}
+                                        className={cn(
+                                            "relative group rounded-xl overflow-hidden transition-all duration-300",
+                                            isLocked ? "opacity-70 cursor-not-allowed" : "cursor-pointer",
+                                            isSelected
+                                                ? "ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900 scale-[1.02] shadow-lg"
+                                                : !isLocked && "hover:scale-[1.02] hover:shadow-md border border-transparent hover:border-slate-300 dark:hover:border-slate-600"
+                                        )}
+                                    >
+                                        <div className="aspect-[2/3] w-full relative">
+                                            <img
+                                                src={skin.img}
+                                                alt={skin.name}
+                                                className={cn(
+                                                    "w-full h-full object-cover transition-all",
+                                                    isLocked && "grayscale blur-[2px]"
                                                 )}
+                                            />
+
+                                            {/* Selection Indicator */}
+                                            {isSelected && (
+                                                <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-full shadow-lg z-10">
+                                                    <CheckCircle className="h-3 w-3" />
+                                                </div>
+                                            )}
+
+                                            {/* Locked Overlay */}
+                                            {isLocked && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px] text-white p-2 text-center">
+                                                    <Lock className="h-6 w-6 mb-1 text-slate-300" />
+                                                    <span className="text-xs font-bold">Niveau {skin.level}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Label */}
+                                            {!isLocked && (
                                                 <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-center backdrop-blur-sm">
                                                     <span className={cn(
                                                         "text-xs font-bold block",
@@ -723,12 +733,12 @@ export default function VirtualGame() {
                                                         {skin.name}
                                                     </span>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -812,20 +822,10 @@ export default function VirtualGame() {
                             <label className="text-sm font-medium" style={{ color: '#cbd5e1' }}>Difficulté</label>
                             <div className="grid grid-cols-3 gap-2">
                                 <Button
-                                    variant={aiConfig.difficulty === AI_DIFFICULTY.EASY ? 'default' : 'outline'}
-                                    className={cn(
-                                        "w-full px-2 text-sm",
-                                        aiConfig.difficulty === AI_DIFFICULTY.EASY && "bg-green-600 hover:bg-green-700 text-white"
-                                    )}
-                                    onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.EASY })}
-                                >
-                                    Facile
-                                </Button>
-                                <Button
                                     variant={aiConfig.difficulty === AI_DIFFICULTY.NORMAL ? 'default' : 'outline'}
                                     className={cn(
                                         "w-full px-2 text-sm",
-                                        aiConfig.difficulty === AI_DIFFICULTY.NORMAL && "bg-amber-600 hover:bg-amber-700 text-white"
+                                        aiConfig.difficulty === AI_DIFFICULTY.NORMAL && "bg-emerald-600 hover:bg-emerald-700 text-white"
                                     )}
                                     onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.NORMAL })}
                                 >
@@ -835,11 +835,21 @@ export default function VirtualGame() {
                                     variant={aiConfig.difficulty === AI_DIFFICULTY.HARD ? 'default' : 'outline'}
                                     className={cn(
                                         "w-full px-2 text-sm",
-                                        aiConfig.difficulty === AI_DIFFICULTY.HARD && "bg-red-600 hover:bg-red-700 text-white"
+                                        aiConfig.difficulty === AI_DIFFICULTY.HARD && "bg-amber-600 hover:bg-amber-700 text-white"
                                     )}
                                     onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.HARD })}
                                 >
                                     Difficile
+                                </Button>
+                                <Button
+                                    variant={aiConfig.difficulty === AI_DIFFICULTY.HARDCORE ? 'default' : 'outline'}
+                                    className={cn(
+                                        "w-full px-2 text-sm font-extrabold",
+                                        aiConfig.difficulty === AI_DIFFICULTY.HARDCORE && "bg-red-800 hover:bg-red-900 border border-red-500 text-white shadow-[0_0_10px_rgba(220,38,38,0.5)] animate-pulse"
+                                    )}
+                                    onClick={() => setAIConfig({ ...aiConfig, difficulty: AI_DIFFICULTY.HARDCORE })}
+                                >
+                                    HARDCORE
                                 </Button>
                             </div>
                         </div>
